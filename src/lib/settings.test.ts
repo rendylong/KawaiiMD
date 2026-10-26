@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { pushRecent, resolvedTheme, setThemeMode, setTreeCollapsed, settings } from "./settings.svelte";
+import { pushRecent, resolvedTheme, setSplit, setThemeMode, setTreeCollapsed, settings } from "./settings.svelte";
 
 describe("settings", () => {
   beforeEach(() => {
@@ -36,5 +36,12 @@ describe("settings", () => {
     setTreeCollapsed(true);
     expect(localStorage.getItem("moyue.tree-collapsed")).toBe("true");
     expect(settings.treeCollapsed).toBe(true);
+  });
+
+  it("编辑分栏比例持久化并夹取 25-75", () => {
+    setSplit(90);
+    expect(settings.split).toBe(75);
+    expect(JSON.parse(localStorage.getItem("moyue.split") ?? "0")).toBe(75);
+    setSplit(50);
   });
 });

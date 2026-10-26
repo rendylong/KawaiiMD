@@ -10,8 +10,10 @@ export function renderForFile(src: string, fileDir: string): Doc {
   return { html: resolveImageSrcs(html, fileDir, convertFileSrc), toc, headingLines };
 }
 
-export async function mountDoc(container: HTMLElement, src: string, fileDir: string, theme: Theme): Promise<void> {
-  container.innerHTML = renderForFile(src, fileDir).html;
+export async function mountDoc(container: HTMLElement, src: string, fileDir: string, theme: Theme): Promise<Doc> {
+  const doc = renderForFile(src, fileDir);
+  container.innerHTML = doc.html;
   addCopyButtons(container);
   await renderMermaidBlocks(container, theme);
+  return doc;
 }

@@ -11,8 +11,8 @@ export async function readTextFile(path: string): Promise<string> {
   return invoke<string>("read_text_file", { path });
 }
 
-export async function writeTextFile(path: string, contents: string): Promise<void> {
-  return invoke<void>("write_text_file", { path, contents });
+export async function writeTextFile(path: string, contents: string): Promise<number> {
+  return invoke<number>("write_text_file", { path, contents });
 }
 
 export async function listDir(path: string): Promise<DirEntry[]> {

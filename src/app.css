@@ -426,6 +426,119 @@ button {
   color: var(--fg-2);
 }
 
+/* —— 编辑视图（决策 7.1/8.1） —— */
+.edit-split {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.ed-src {
+  min-width: 0;
+  overflow: hidden;
+  border-right: 1px solid var(--line);
+}
+
+.ed-src .cm-editor {
+  height: 100%;
+}
+
+.ed-divider {
+  width: 5px;
+  cursor: col-resize;
+  position: relative;
+  flex: none;
+  margin: 0 -2px;
+  z-index: 2;
+}
+
+.ed-divider::after {
+  content: "";
+  position: absolute;
+  inset: 0 2px;
+  background: var(--line);
+  border-radius: 3px;
+}
+
+.ed-divider:hover::after,
+.ed-divider.drag::after {
+  background: var(--accent);
+}
+
+.ed-prev-wrap {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  background: var(--bg);
+}
+
+.ed-prev {
+  padding: 26px 34px 70px;
+  font-size: 15.5px;
+}
+
+.dirty-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: inline-block;
+}
+
+.conflict-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.conflict-box {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 22px 26px;
+  min-width: 320px;
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.2);
+}
+
+.conflict-box .c-title {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+
+.conflict-box .c-path {
+  font-size: 12.5px;
+  color: var(--fg-2);
+  font-family: var(--font-mono);
+  margin-bottom: 18px;
+  word-break: break-all;
+}
+
+.conflict-box .c-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.conflict-box .c-actions button {
+  border: 1px solid var(--line);
+  background: var(--bg);
+  font-size: 13px;
+  padding: 7px 14px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.conflict-box .c-actions button.pri {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+}
+
 /* —— TOC —— */
 .toc-panel {
   padding: 14px 8px;

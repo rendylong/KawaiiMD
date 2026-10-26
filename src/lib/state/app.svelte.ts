@@ -16,6 +16,7 @@ export const app = $state({
   conflictPath: null as string | null,
   dirty: false,
   savedMtime: null as number | null,
+  docSource: null as string | null,
 });
 
 export function setError(msg: string): void {
@@ -27,6 +28,7 @@ export async function openFile(path: string): Promise<void> {
   try {
     await grantAssetScope(dirname(path));
     const src = await readTextFile(path);
+    app.docSource = src;
     app.doc = renderForFile(src, dirname(path));
     app.currentPath = path;
     app.error = null;

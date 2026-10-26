@@ -9,6 +9,7 @@
   import Welcome from "$lib/components/Welcome.svelte";
   import FileTree from "$lib/components/FileTree.svelte";
   import TocPanel from "$lib/components/TocPanel.svelte";
+  import EditorView from "$lib/components/EditorView.svelte";
   import { setTocCollapsed, setTreeCollapsed } from "$lib/settings.svelte";
 
   function cycleTheme(): void {
@@ -44,6 +45,11 @@
       e.preventDefault();
       if (e.shiftKey) void onOpenFolder();
       else void onOpenFile();
+    } else if (k === "e" && app.doc) {
+      e.preventDefault();
+      app.mode = app.mode === "edit" ? "read" : "edit";
+    } else if (k === "s" && app.mode === "edit") {
+      e.preventDefault();
     }
   }
 </script>
@@ -80,9 +86,17 @@
       <button type="button" aria-label={S.themeHint} onclick={cycleTheme}>
         <Icon name={resolvedTheme() === "dark" ? "sun" : "moon"} />
       </button>
-      <button type="button" class="mode" aria-label={S.toEdit}>
+      <button
+        type="button"
+        class="mode"
+        aria-label={app.mode === "edit" ? S.toRead : S.toEdit}
+        onclick={() => {
+          if (app.doc) app.mode = app.mode === "edit" ? "read" : "edit";
+        }}
+      >
         <Icon name="pencilLine" />
-        <span>{S.editMode}</span>
+        <span>{app.mode === "edit" ? S.readMode : S.editMode}</span>
+        {#if app.dirty}<span class="dirty-dot" aria-label="未保存"></span>{/if}
       </button>
     </div>
   </header>
@@ -95,11 +109,13 @@
     <section class="reader">
       {#if app.currentPath === null && app.error === null}
         <Welcome />
+      {:else if app.mode === "edit"}
+        <EditorView />
       {:else}
         <ReaderView />
       {/if}
     </section>
-    {#if !settings.tocCollapsed}
+    {#if !settings.tocCollapsed && app.mode === "read"}
       <aside class="side toc" aria-label="文档目录">
         <TocPanel />
       </aside>

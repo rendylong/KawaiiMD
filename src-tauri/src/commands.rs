@@ -21,8 +21,17 @@ pub fn read_text_impl(path: &Path) -> Result<String, String> {
     fs::read_to_string(path).map_err(|e| format!("读取失败({}): {}", err_desc(&e), path.display()))
 }
 
-pub fn write_text_impl(path: &Path, contents: &str) -> Result<(), String> {
-    fs::write(path, contents).map_err(|e| format!("写入失败({}): {}", err_desc(&e), path.display()))
+pub fn write_text_impl(path: &Path, contents: &str) -> Result<u128, String> {
+    fs::write(path, contents).map_err(|e| format!("写入失败({}): {}", err_desc(&e), path.display()))?;
+    mtime_ms(path)
+}
+
+fn mtime_ms(path: &Path) -> Result<u128, String> {
+    fs::metadata(path)
+        .and_then(|m| m.modified())
+        .map_err(|e| format!("读取时间失败({}): {}", err_desc(&e), path.display()))
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).map_err(|_| "时间错误".to_string()))
+        .map(|d| d.as_millis())
 }
 
 pub fn list_dir_impl(path: &Path) -> Result<Vec<DirEntry>, String> {
@@ -44,7 +53,7 @@ pub fn read_text_file(path: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-pub fn write_text_file(path: String, contents: String) -> Result<(), String> {
+pub fn write_text_file(path: String, contents: String) -> Result<u128, String> {
     write_text_impl(Path::new(&path), &contents)
 }
 
@@ -96,8 +105,9 @@ mod tests {
     fn write_text_roundtrip() {
         let dir = tempfile::tempdir().unwrap();
         let f = dir.path().join("w.md");
-        write_text_impl(&f, "abc 中文").unwrap();
+        let mtime = write_text_impl(&f, "abc 中文").unwrap();
         assert_eq!(fs::read_to_string(&f).unwrap(), "abc 中文");
+        assert!(mtime > 0);
     }
 
     #[test]
