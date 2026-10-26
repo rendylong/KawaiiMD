@@ -363,7 +363,6 @@ button {
 .doc blockquote {
   margin: 1em 0;
   padding: 2px 16px;
-  border-left: 3px solid var(--line);
   color: var(--fg-2);
 }
 
@@ -377,7 +376,6 @@ button {
 }
 
 .doc .markdown-alert {
-  border-left: 3px solid var(--accent);
   border-radius: 6px;
   background: var(--accent-weak);
   padding: 8px 16px;
@@ -630,7 +628,6 @@ button {
   text-decoration: none;
   padding: 4px 10px;
   border-radius: 6px;
-  border-left: 2px solid transparent;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -643,7 +640,6 @@ button {
 .toc-panel a.cur {
   color: var(--accent);
   font-weight: 600;
-  border-left-color: var(--accent);
 }
 
 /* —— 文件树 —— */
