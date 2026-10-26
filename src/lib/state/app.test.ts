@@ -99,6 +99,13 @@ describe("openFile", () => {
     expect(app.doc?.toc).toEqual([{ id: "新标题", level: 1, text: "新标题" }]);
   });
 
+  it("openFile 递增 docVersion（编辑器据此重建，输入不触发）", async () => {
+    await openFile("/d/a.md");
+    const v1 = app.docVersion;
+    await openFile("/d/b.md");
+    expect(app.docVersion).toBe(v1 + 1);
+  });
+
   it("restoreSession：已有当前文件（如启动期双击打开）则不再恢复会话文件", async () => {
     settings.session = { file: "/d/old.md", folder: null };
     app.currentPath = "/d/new.md";

@@ -24,6 +24,7 @@ export const app = $state({
   mode: "read" as "read" | "edit",
   doc: null as Doc | null,
   docSource: null as string | null,
+  docVersion: 0,
   savedSource: null as string | null,
   error: null as string | null,
   loading: false,
@@ -81,6 +82,7 @@ export async function openFile(path: string, opts?: { force?: boolean }): Promis
     app.dirty = false;
     app.doc = renderForFile(src, dirname(path));
     app.currentPath = path;
+    app.docVersion += 1;
     app.error = null;
     pushRecent(path);
     setSession({ file: path });

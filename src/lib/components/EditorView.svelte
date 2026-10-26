@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import { EditorState } from "@codemirror/state";
   import { EditorView, keymap } from "@codemirror/view";
   import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
@@ -65,7 +66,11 @@
   let view = $state<EditorView | null>(null);
 
   $effect(() => {
-    const src = app.docSource ?? "";
+    // 仅依赖文件身份与版本：切换文件/外部重载才重建编辑器；
+    // 击键只写 docSource，不触发本 effect（否则编辑器销毁重建、焦点丢失）。
+    void app.currentPath;
+    void app.docVersion;
+    const src = untrack(() => app.docSource ?? "");
     const editor = new EditorView({
       state: EditorState.create({
         doc: src,
@@ -89,7 +94,7 @@
       parent: editorHost,
     });
     view = editor;
-    void refreshPreview();
+    untrack(() => void refreshPreview());
     const onEditorScroll = () => syncPreviewToEditor(editor);
     const onPreviewScroll = () => syncEditorToPreview(editor);
     editor.dom.addEventListener("scroll", onEditorScroll, { passive: true });
