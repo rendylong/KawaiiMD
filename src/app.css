@@ -661,6 +661,12 @@ button {
   flex: none;
 }
 
+/* 根因（第五轮实测）：svg 是 .t-item flex 行的无保护子项，长文件名溢出时
+   flex 按基准分摊收缩把 svg 宽度挤小，viewBox meet 再等比缩小字形 → 图标随名长连续变小 */
+.file-tree .t-item svg {
+  flex: none;
+}
+
 .file-tree .t-item .t-name {
   overflow: hidden;
   text-overflow: ellipsis;
