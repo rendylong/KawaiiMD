@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { S } from "$lib/ui-strings";
   import { resolvedTheme, setThemeMode, settings } from "$lib/settings.svelte";
-  import { app, openFile, openFolder, wireFsChange } from "$lib/state/app.svelte";
+  import { app, openFile, openFolder, restoreSession, wireFsChange } from "$lib/state/app.svelte";
   import { pickFile, pickFolder } from "$lib/fs/tauri";
   import Icon from "$lib/components/Icon.svelte";
   import ReaderView from "$lib/components/ReaderView.svelte";
@@ -33,6 +33,7 @@
 
   onMount(() => {
     void wireFsChange();
+    void restoreSession();
   });
 
   function onKeydown(e: KeyboardEvent): void {

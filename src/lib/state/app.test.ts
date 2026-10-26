@@ -6,12 +6,14 @@ const readTextFile = vi.fn(async (_path: string) => "# 标题\n\n正文 [^1]\n\n
 vi.mock("$lib/fs/tauri", () => ({
   grantAssetScope,
   readTextFile,
-  writeTextFile: vi.fn(async () => {}),
+  writeTextFile: vi.fn(async () => 123),
   listDir: vi.fn(async () => []),
   pickFile: vi.fn(async () => null),
   pickFolder: vi.fn(async () => null),
   watchPaths: vi.fn(async () => {}),
   onFsChange: vi.fn(async () => () => {}),
+  onOpenFileEvent: vi.fn(async () => () => {}),
+  onDrop: vi.fn(async () => () => {}),
   convertFileSrc: (p: string) => `asset://${p}`,
   dirname: (p: string) => p.split("/").slice(0, -1).join("/") || "/",
 }));

@@ -1,5 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { pushRecent, resolvedTheme, setSplit, setThemeMode, setTreeCollapsed, settings } from "./settings.svelte";
+import {
+  pushRecent,
+  resolvedTheme,
+  setSession,
+  setSplit,
+  setThemeMode,
+  setTreeCollapsed,
+  settings,
+} from "./settings.svelte";
 
 describe("settings", () => {
   beforeEach(() => {
@@ -43,5 +51,14 @@ describe("settings", () => {
     expect(settings.split).toBe(75);
     expect(JSON.parse(localStorage.getItem("moyue.split") ?? "0")).toBe(75);
     setSplit(50);
+  });
+
+  it("会话持久化（部分更新）", () => {
+    setSession({ file: "/d/a.md" });
+    setSession({ folder: "/d" });
+    const saved = JSON.parse(localStorage.getItem("moyue.session") ?? "{}");
+    expect(saved).toEqual({ file: "/d/a.md", folder: "/d" });
+    expect(settings.session.file).toBe("/d/a.md");
+    settings.session = { file: null, folder: null };
   });
 });

@@ -1,8 +1,17 @@
-import { convertFileSrc, dirname, grantAssetScope, onFsChange, readTextFile, watchPaths } from "../fs/tauri";
+import {
+  convertFileSrc,
+  dirname,
+  grantAssetScope,
+  onDrop,
+  onFsChange,
+  onOpenFileEvent,
+  readTextFile,
+  watchPaths,
+} from "../fs/tauri";
 import { restoreScroll } from "../dom/scroll";
 import { renderForFile } from "../markdown/pipeline";
 import { debounce300, decideReload } from "./reload";
-import { pushRecent } from "../settings.svelte";
+import { pushRecent, setSession, settings } from "../settings.svelte";
 import { S } from "../ui-strings";
 import type { Doc } from "../types";
 
@@ -33,6 +42,7 @@ export async function openFile(path: string): Promise<void> {
     app.currentPath = path;
     app.error = null;
     pushRecent(path);
+    setSession({ file: path });
     await watchPaths([path, dirname(path)]);
   } catch (e) {
     app.doc = null;
@@ -46,6 +56,7 @@ export async function openFile(path: string): Promise<void> {
 export async function openFolder(path: string): Promise<void> {
   app.workspaceRoot = path;
   await grantAssetScope(path);
+  setSession({ folder: path });
 }
 
 function nearestHeadingId(): string | null {
@@ -86,4 +97,23 @@ export async function wireFsChange(): Promise<void> {
   if (fsChangeWired) return;
   fsChangeWired = true;
   await onFsChange((e) => onFsChangeDebounced(e));
+  await onOpenFileEvent((path) => void openFile(path));
+  await onDrop((paths) => {
+    const p = paths[0];
+    if (!p) return;
+    if (/\.(md|markdown|mkd|mdx)$/i.test(p)) void openFile(p);
+    else void openFolder(p);
+  });
+}
+
+export async function restoreSession(): Promise<void> {
+  if (settings.session.folder) app.workspaceRoot = settings.session.folder;
+  if (settings.session.file) {
+    await openFile(settings.session.file);
+    if (app.error) {
+      app.error = null;
+      app.currentPath = null;
+      app.doc = null;
+    }
+  }
 }

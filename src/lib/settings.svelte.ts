@@ -6,6 +6,9 @@ const KEY_RECENT = "moyue.recent";
 const KEY_TREE_COLLAPSED = "moyue.tree-collapsed";
 const KEY_TOC_COLLAPSED = "moyue.toc-collapsed";
 const KEY_SPLIT = "moyue.split";
+const KEY_SESSION = "moyue.session";
+
+export type Session = { file: string | null; folder: string | null };
 
 function load<T>(key: string, fallback: T): T {
   try {
@@ -30,7 +33,13 @@ export const settings = $state({
   treeCollapsed: load<boolean>(KEY_TREE_COLLAPSED, false),
   tocCollapsed: load<boolean>(KEY_TOC_COLLAPSED, false),
   split: load<number>(KEY_SPLIT, 50),
+  session: load<Session>(KEY_SESSION, { file: null, folder: null }),
 });
+
+export function setSession(patch: Partial<Session>): void {
+  settings.session = { ...settings.session, ...patch };
+  persist(KEY_SESSION, settings.session);
+}
 
 export function setSplit(v: number): void {
   settings.split = Math.min(75, Math.max(25, Math.round(v)));

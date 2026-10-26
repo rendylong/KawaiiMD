@@ -47,4 +47,17 @@ export async function onFsChange(cb: (e: FsChange) => void): Promise<() => void>
   return un;
 }
 
+export async function onOpenFileEvent(cb: (path: string) => void): Promise<() => void> {
+  const un = await listen<{ path: string }>("open-file", (ev) => cb(ev.payload.path));
+  return un;
+}
+
+export async function onDrop(cb: (paths: string[]) => void): Promise<() => void> {
+  const { getCurrentWebview } = await import("@tauri-apps/api/webview");
+  const un = await getCurrentWebview().onDragDropEvent((ev) => {
+    if (ev.payload.type === "drop") cb(ev.payload.paths);
+  });
+  return un;
+}
+
 export { convertFileSrc };
