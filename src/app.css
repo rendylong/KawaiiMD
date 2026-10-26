@@ -245,11 +245,77 @@ button {
 }
 
 .doc pre {
+  position: relative;
   background: var(--code-bg);
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 12px 14px;
   overflow: auto;
+}
+
+.doc pre .copy-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  border: none;
+  background: none;
+  color: var(--fg-3);
+  font-size: 11.5px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.doc pre:hover .copy-btn,
+.doc pre .copy-btn:focus-visible {
+  opacity: 1;
+}
+
+.doc pre .copy-btn:hover {
+  background: var(--accent-weak);
+  color: var(--accent);
+}
+
+/* —— hljs 主题联动（墨青色板派生） —— */
+:root[data-theme="light"] .doc pre code .hljs-keyword,
+:root[data-theme="light"] .doc pre code .hljs-selector-tag,
+:root[data-theme="light"] .doc pre code .hljs-meta {
+  color: #1d6a62;
+}
+
+:root[data-theme="light"] .doc pre code .hljs-string,
+:root[data-theme="light"] .doc pre code .hljs-attr {
+  color: #8a5a2b;
+}
+
+:root[data-theme="light"] .doc pre code .hljs-title,
+:root[data-theme="light"] .doc pre code .hljs-name {
+  color: #35619e;
+}
+
+:root[data-theme="light"] .doc pre code .hljs-comment {
+  color: var(--fg-3);
+}
+
+:root[data-theme="dark"] .doc pre code .hljs-keyword,
+:root[data-theme="dark"] .doc pre code .hljs-selector-tag,
+:root[data-theme="dark"] .doc pre code .hljs-meta {
+  color: #6fc4b7;
+}
+
+:root[data-theme="dark"] .doc pre code .hljs-string,
+:root[data-theme="dark"] .doc pre code .hljs-attr {
+  color: #d9a648;
+}
+
+:root[data-theme="dark"] .doc pre code .hljs-title,
+:root[data-theme="dark"] .doc pre code .hljs-name {
+  color: #8ab4e8;
+}
+
+:root[data-theme="dark"] .doc pre code .hljs-comment {
+  color: var(--fg-3);
 }
 
 .doc pre code {

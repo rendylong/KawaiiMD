@@ -5,8 +5,9 @@ import footnote from "markdown-it-footnote";
 import { alert as mdAlert } from "@mdit/plugin-alert";
 import type { Doc, HeadingLine, TocItem } from "../types";
 import { makeSlugger } from "./slug";
+import { mdHighlight } from "./highlight";
 
-const md = new MarkdownIt({ html: false, linkify: true })
+const md = new MarkdownIt({ html: false, linkify: true, highlight: mdHighlight })
   .use(taskLists)
   .use(footnote)
   .use(mdAlert);

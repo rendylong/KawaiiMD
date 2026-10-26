@@ -34,7 +34,8 @@ describe("renderMarkdown", () => {
 
   it("未闭合代码块不抛异常且内容可见", () => {
     expect(() => renderMarkdown("```js\nconst a = 1")).not.toThrow();
-    expect(renderMarkdown("```js\nconst a = 1").html).toContain("const a = 1");
+    const html = renderMarkdown("```js\nconst a = 1").html;
+    expect(html.replace(/<[^>]+>/g, "")).toContain("const a = 1");
   });
 
   it("mermaid 块保留 language-mermaid", () => {
