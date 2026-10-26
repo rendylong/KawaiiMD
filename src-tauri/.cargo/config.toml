@@ -1,0 +1,3 @@
+# CLT 27.0 SDK 的 tbd（arm64e.x1）与本机 clang/tapi 不兼容，固定到 26.5
+[env]
+SDKROOT = "/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk"
