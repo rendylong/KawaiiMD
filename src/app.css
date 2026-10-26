@@ -86,6 +86,7 @@ button {
 }
 
 .tb-actions button {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -107,6 +108,44 @@ button {
 .tb-actions button.mode {
   width: auto;
   padding: 0 10px;
+}
+
+/* —— 工具栏 hover chips（macOS 风格提示气泡） —— */
+.tb-actions button[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: var(--fg);
+  color: var(--bg);
+  border: 1px solid var(--line);
+  font-size: 11px;
+  font-family: var(--font-ui);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 20;
+  transition: opacity 0.14s ease;
+}
+
+.tb-actions button[data-tip]:hover::after {
+  opacity: 1;
+  transition-delay: 0.4s;
+}
+
+.tb-actions button[data-tip]:focus-visible::after {
+  opacity: 1;
+  transition-delay: 0s;
+}
+
+/* 最右侧按钮的 chip 右对齐，避免溢出窗口边缘 */
+.tb-actions button:last-child[data-tip]::after {
+  left: auto;
+  right: 0;
+  transform: none;
 }
 
 .main {

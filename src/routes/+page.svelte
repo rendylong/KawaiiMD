@@ -13,8 +13,10 @@
   import EditorView from "$lib/components/EditorView.svelte";
   import Lightbox from "$lib/components/Lightbox.svelte";
 
-  function cycleTheme(): void {
-    setThemeMode(settings.themeMode === "system" ? "light" : settings.themeMode === "light" ? "dark" : "system");
+  function toggleTheme(): void {
+    // 直接按当前生效主题翻转：旧的 system→light→dark 三态循环在 system=light 时
+    // 第一次点击无可见变化（正是"要点两次"的根因）
+    setThemeMode(resolvedTheme() === "dark" ? "light" : "dark");
   }
 
   async function onOpenFile(): Promise<void> {
@@ -37,7 +39,7 @@
     const k = e.key.toLowerCase();
     if (k === "t") {
       e.preventDefault();
-      cycleTheme();
+      toggleTheme();
     } else if (k === "o") {
       e.preventDefault();
       if (e.shiftKey) void onOpenFolder();
@@ -94,23 +96,26 @@
         type="button"
         aria-label={S.toggleTree}
         aria-pressed={settings.treeCollapsed}
+        data-tip={S.toggleTree}
         onclick={() => setTreeCollapsed(!settings.treeCollapsed)}
       ><Icon name="panelLeft" /></button>
       <button
         type="button"
         aria-label={S.toggleToc}
         aria-pressed={settings.tocCollapsed}
+        data-tip={S.toggleToc}
         onclick={() => setTocCollapsed(!settings.tocCollapsed)}
       ><Icon name="listTree" /></button>
-      <button type="button" aria-label={S.openFileHint} onclick={onOpenFile}><Icon name="fileText" /></button>
-      <button type="button" aria-label={S.openFolderHint} onclick={onOpenFolder}><Icon name="folderOpen" /></button>
-      <button type="button" aria-label={S.themeHint} onclick={cycleTheme}>
+      <button type="button" aria-label={S.openFileHint} data-tip={S.openFileHint} onclick={onOpenFile}><Icon name="fileText" /></button>
+      <button type="button" aria-label={S.openFolderHint} data-tip={S.openFolderHint} onclick={onOpenFolder}><Icon name="folderOpen" /></button>
+      <button type="button" aria-label={S.themeHint} data-tip={S.themeHint} onclick={toggleTheme}>
         <Icon name={resolvedTheme() === "dark" ? "sun" : "moon"} />
       </button>
       <button
         type="button"
         class="mode"
         aria-label={app.mode === "edit" ? S.toRead : S.toEdit}
+        data-tip={app.mode === "edit" ? S.toRead : S.toEdit}
         onclick={switchMode}
       >
         <Icon name="pencilLine" />
