@@ -642,7 +642,7 @@ button {
 
 .toc-panel a.cur {
   color: var(--accent);
-  background: var(--accent-weak);
+  font-weight: 600;
   border-left-color: var(--accent);
 }
 
