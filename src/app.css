@@ -297,6 +297,41 @@ button {
   margin-top: 2em;
 }
 
+/* —— mermaid（决策 2.1/4.3） —— */
+.doc .mermaid-holder {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  margin: 1.2em 0;
+  padding: 18px;
+  text-align: center;
+}
+
+.doc .mermaid-holder svg {
+  max-width: 100%;
+}
+
+.doc .mermaid-holder.mermaid-fade {
+  animation: doc-fade 0.12s ease-out;
+}
+
+.doc .mermaid-skel {
+  min-height: 120px;
+  border-radius: 6px;
+  background: linear-gradient(100deg, var(--code-bg) 30%, var(--bg-side) 50%, var(--code-bg) 70%);
+  background-size: 200% 100%;
+  animation: skel 1.1s ease-in-out infinite;
+}
+
+.doc .mermaid-error {
+  border: 1px dashed var(--accent);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--fg-2);
+  margin: 1em 0;
+}
+
 /* —— 骨架（决策 2.1） —— */
 .skeleton .sk-line {
   height: 1em;

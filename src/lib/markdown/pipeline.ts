@@ -2,6 +2,7 @@ import { convertFileSrc } from "../fs/tauri";
 import type { Doc, Theme } from "../types";
 import { resolveImageSrcs } from "./images";
 import { renderMarkdown } from "./render";
+import { renderMermaidBlocks } from "./mermaid";
 
 export function renderForFile(src: string, fileDir: string): Doc {
   const { html, toc, headingLines } = renderMarkdown(src);
@@ -9,6 +10,6 @@ export function renderForFile(src: string, fileDir: string): Doc {
 }
 
 export async function mountDoc(container: HTMLElement, src: string, fileDir: string, theme: Theme): Promise<void> {
-  void theme;
   container.innerHTML = renderForFile(src, fileDir).html;
+  await renderMermaidBlocks(container, theme);
 }
