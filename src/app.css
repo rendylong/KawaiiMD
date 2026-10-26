@@ -325,6 +325,79 @@ button {
   color: var(--fg-2);
 }
 
+/* —— 文件树 —— */
+.file-tree {
+  padding: 10px 6px;
+  font-size: 13px;
+}
+
+.file-tree .t-head {
+  font-size: 11px;
+  color: var(--fg-3);
+  letter-spacing: 0.06em;
+  padding: 2px 8px 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-tree .t-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 5px 8px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  color: var(--fg-2);
+  cursor: pointer;
+  text-align: left;
+}
+
+.file-tree .t-item:hover {
+  background: var(--accent-weak);
+  color: var(--fg);
+}
+
+.file-tree .t-item.active {
+  background: var(--accent-weak);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.file-tree .t-item .tw {
+  display: inline-flex;
+  width: 12px;
+  justify-content: center;
+  color: var(--fg-3);
+  font-size: 10px;
+  flex: none;
+}
+
+.file-tree .t-item .t-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-tree .spin {
+  width: 11px;
+  height: 11px;
+  margin-left: auto;
+  border: 1.5px solid var(--line);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: tree-spin 0.8s linear infinite;
+  flex: none;
+}
+
+@keyframes tree-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* —— 欢迎页 —— */
 .welcome {
   height: 100%;

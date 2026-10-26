@@ -3,6 +3,8 @@ export type Theme = "light" | "dark";
 
 const KEY_THEME = "moyue.theme";
 const KEY_RECENT = "moyue.recent";
+const KEY_TREE_COLLAPSED = "moyue.tree-collapsed";
+const KEY_TOC_COLLAPSED = "moyue.toc-collapsed";
 
 function load<T>(key: string, fallback: T): T {
   try {
@@ -24,7 +26,19 @@ function persist(key: string, value: unknown): void {
 export const settings = $state({
   themeMode: load<ThemeMode>(KEY_THEME, "system"),
   recents: load<string[]>(KEY_RECENT, []),
+  treeCollapsed: load<boolean>(KEY_TREE_COLLAPSED, false),
+  tocCollapsed: load<boolean>(KEY_TOC_COLLAPSED, false),
 });
+
+export function setTreeCollapsed(v: boolean): void {
+  settings.treeCollapsed = v;
+  persist(KEY_TREE_COLLAPSED, v);
+}
+
+export function setTocCollapsed(v: boolean): void {
+  settings.tocCollapsed = v;
+  persist(KEY_TOC_COLLAPSED, v);
+}
 
 export function setThemeMode(mode: ThemeMode): void {
   settings.themeMode = mode;

@@ -6,6 +6,8 @@
   import Icon from "$lib/components/Icon.svelte";
   import ReaderView from "$lib/components/ReaderView.svelte";
   import Welcome from "$lib/components/Welcome.svelte";
+  import FileTree from "$lib/components/FileTree.svelte";
+  import { setTreeCollapsed } from "$lib/settings.svelte";
 
   function cycleTheme(): void {
     setThemeMode(settings.themeMode === "system" ? "light" : settings.themeMode === "light" ? "dark" : "system");
@@ -55,7 +57,12 @@
     </div>
     <div class="tb-file" title={S.revealInFinder}>{basename(app.currentPath)}</div>
     <div class="tb-actions">
-      <button type="button" aria-label={S.toggleTree}><Icon name="panelLeft" /></button>
+      <button
+        type="button"
+        aria-label={S.toggleTree}
+        aria-pressed={settings.treeCollapsed}
+        onclick={() => setTreeCollapsed(!settings.treeCollapsed)}
+      ><Icon name="panelLeft" /></button>
       <button type="button" aria-label={S.openFileHint} onclick={onOpenFile}><Icon name="fileText" /></button>
       <button type="button" aria-label={S.openFolderHint} onclick={onOpenFolder}><Icon name="folderOpen" /></button>
       <button type="button" aria-label={S.themeHint} onclick={cycleTheme}>
@@ -68,7 +75,11 @@
     </div>
   </header>
   <div class="main">
-    <aside class="side tree" aria-label="文件树"></aside>
+    {#if !settings.treeCollapsed}
+      <aside class="side tree" aria-label="文件树">
+        <FileTree />
+      </aside>
+    {/if}
     <section class="reader">
       {#if app.currentPath === null && app.error === null}
         <Welcome />
