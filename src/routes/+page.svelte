@@ -10,6 +10,7 @@
   import FileTree from "$lib/components/FileTree.svelte";
   import TocPanel from "$lib/components/TocPanel.svelte";
   import EditorView from "$lib/components/EditorView.svelte";
+  import Lightbox from "$lib/components/Lightbox.svelte";
   import { setTocCollapsed, setTreeCollapsed } from "$lib/settings.svelte";
 
   function cycleTheme(): void {
@@ -123,3 +124,5 @@
     {/if}
   </div>
 </div>
+
+<Lightbox />

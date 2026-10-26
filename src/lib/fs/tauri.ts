@@ -60,4 +60,9 @@ export async function onDrop(cb: (paths: string[]) => void): Promise<() => void>
   return un;
 }
 
+export async function revealInFinder(path: string): Promise<void> {
+  const { revealItemInDir } = await import("@tauri-apps/plugin-opener");
+  return revealItemInDir(path);
+}
+
 export { convertFileSrc };

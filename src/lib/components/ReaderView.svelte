@@ -11,6 +11,11 @@
       container.classList.add("doc-fade");
     }
   });
+
+  function onDocClick(e: MouseEvent): void {
+    const target = e.target as HTMLElement;
+    if (target.tagName === "IMG") app.lightboxSrc = (target as HTMLImageElement).src;
+  }
 </script>
 
 {#if app.error}
@@ -23,5 +28,6 @@
     <div class="sk-line" style="width: 60%"></div>
   </div>
 {:else if app.doc}
-  <div class="doc" bind:this={container}></div>
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <div class="doc" role="presentation" bind:this={container} onclick={onDocClick}></div>
 {/if}

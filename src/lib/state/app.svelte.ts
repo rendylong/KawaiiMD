@@ -26,6 +26,7 @@ export const app = $state({
   dirty: false,
   savedMtime: null as number | null,
   docSource: null as string | null,
+  lightboxSrc: null as string | null,
 });
 
 export function setError(msg: string): void {

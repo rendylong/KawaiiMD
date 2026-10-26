@@ -539,6 +539,34 @@ button {
   color: var(--bg);
 }
 
+/* —— Lightbox —— */
+.lb-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  cursor: zoom-out;
+}
+
+.lb-overlay img {
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 4px;
+  cursor: zoom-in;
+}
+
+.lb-overlay img.zoomed {
+  max-width: none;
+  max-height: none;
+  width: auto;
+  height: auto;
+  transform: scale(2);
+  cursor: zoom-out;
+}
+
 /* —— TOC —— */
 .toc-panel {
   padding: 14px 8px;

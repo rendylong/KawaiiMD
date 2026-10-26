@@ -1,6 +1,6 @@
 <script lang="ts">
   import { app, openFile } from "../state/app.svelte";
-  import { dirname, listDir } from "../fs/tauri";
+  import { convertFileSrc, dirname, listDir, revealInFinder } from "../fs/tauri";
   import { classifyEntry, sortEntries } from "../fs/entries";
   import Icon from "./Icon.svelte";
 
@@ -87,6 +87,8 @@
   function onNodeClick(node: Node): void {
     if (node.isDir) void toggle(node);
     else if (classifyEntry(node.name, false) === "markdown") void openFile(node.path);
+    else if (classifyEntry(node.name, false) === "image") app.lightboxSrc = convertFileSrc(node.path);
+    else void revealInFinder(node.path).catch(() => {});
   }
 
   function visibleNodes(list: Node[], out: Node[] = []): Node[] {
