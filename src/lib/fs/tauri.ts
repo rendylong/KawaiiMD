@@ -1,6 +1,9 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
-import type { DirEntry } from "../types";
+import type { DirEntry, FsKind } from "../types";
+
+export type FsChange = { path: string; kind: FsKind; mtime: number };
 
 const MD_FILTER = [{ name: "Markdown", extensions: ["md", "markdown", "mkd", "mdx"] }];
 
@@ -33,6 +36,15 @@ export async function pickFolder(): Promise<string | null> {
 export function dirname(path: string): string {
   const i = path.lastIndexOf("/");
   return i <= 0 ? "/" : path.slice(0, i);
+}
+
+export async function watchPaths(paths: string[]): Promise<void> {
+  return invoke<void>("watch_paths", { paths });
+}
+
+export async function onFsChange(cb: (e: FsChange) => void): Promise<() => void> {
+  const un = await listen<FsChange>("fs-change", (ev) => cb(ev.payload));
+  return un;
 }
 
 export { convertFileSrc };

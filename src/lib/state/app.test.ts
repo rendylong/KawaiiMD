@@ -10,6 +10,8 @@ vi.mock("$lib/fs/tauri", () => ({
   listDir: vi.fn(async () => []),
   pickFile: vi.fn(async () => null),
   pickFolder: vi.fn(async () => null),
+  watchPaths: vi.fn(async () => {}),
+  onFsChange: vi.fn(async () => () => {}),
   convertFileSrc: (p: string) => `asset://${p}`,
   dirname: (p: string) => p.split("/").slice(0, -1).join("/") || "/",
 }));

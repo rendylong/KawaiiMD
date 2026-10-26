@@ -1,7 +1,8 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { S } from "$lib/ui-strings";
   import { resolvedTheme, setThemeMode, settings } from "$lib/settings.svelte";
-  import { app, openFile, openFolder } from "$lib/state/app.svelte";
+  import { app, openFile, openFolder, wireFsChange } from "$lib/state/app.svelte";
   import { pickFile, pickFolder } from "$lib/fs/tauri";
   import Icon from "$lib/components/Icon.svelte";
   import ReaderView from "$lib/components/ReaderView.svelte";
@@ -28,6 +29,10 @@
     if (!path) return "";
     return path.split("/").pop() ?? "";
   }
+
+  onMount(() => {
+    void wireFsChange();
+  });
 
   function onKeydown(e: KeyboardEvent): void {
     if (!(e.metaKey || e.ctrlKey)) return;

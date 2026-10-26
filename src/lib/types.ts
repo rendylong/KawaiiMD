@@ -9,3 +9,5 @@ export type Doc = { html: string; toc: TocItem[]; headingLines: HeadingLine[] };
 export type DirEntry = { name: string; isDir: boolean };
 
 export type FileKind = "markdown" | "image" | "other";
+
+export type FsKind = "modify" | "remove" | "create";
