@@ -1,11 +1,28 @@
 mod commands;
 mod watcher;
 
+use std::sync::Mutex;
+
+// 冷启动时 RunEvent::Opened 先于前端事件监听器注册到达，暂存最近一次待打开路径。
+static PENDING_OPEN: Mutex<Option<String>> = Mutex::new(None);
+
+fn set_pending_open(path: String) {
+    if let Ok(mut guard) = PENDING_OPEN.lock() {
+        *guard = Some(path);
+    }
+}
+
+#[tauri::command]
+fn take_pending_open_file() -> Option<String> {
+    PENDING_OPEN.lock().ok().and_then(|mut g| g.take())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
             if let Some(path) = argv.iter().nth(1) {
+                set_pending_open(path.clone());
                 let _ = tauri::Emitter::emit(app, "open-file", serde_json::json!({ "path": path }));
             }
         }))
@@ -16,7 +33,8 @@ pub fn run() {
             commands::write_text_file,
             commands::list_dir,
             commands::grant_asset_scope,
-            watcher::watch_paths
+            watcher::watch_paths,
+            take_pending_open_file
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
@@ -27,11 +45,9 @@ pub fn run() {
         if let tauri::RunEvent::Opened { urls } = event {
             for url in urls {
                 if let Ok(path) = url.to_file_path() {
-                    let _ = tauri::Emitter::emit(
-                        app_handle,
-                        "open-file",
-                        serde_json::json!({ "path": path.to_string_lossy() }),
-                    );
+                    let path = path.to_string_lossy().into_owned();
+                    set_pending_open(path.clone());
+                    let _ = tauri::Emitter::emit(app_handle, "open-file", serde_json::json!({ "path": path }));
                 }
             }
         }

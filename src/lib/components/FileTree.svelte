@@ -18,7 +18,6 @@
   let root = $state<{ path: string } | null>(null);
   let nodes = $state<Node[]>([]);
   let container: HTMLElement | undefined = $state();
-  let spinnerTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   const rootPath = $derived(app.workspaceRoot ?? (app.currentPath ? dirname(app.currentPath) : null));
 
@@ -47,30 +46,18 @@
     }));
   }
 
-  function findAndToggle(nodes: Node[], dir: Node): Node[] {
-    return nodes.map((n) => {
-      if (n === dir) return { ...n, open: !n.open };
-      if (n.children.length > 0) return { ...n, children: findAndToggle(n.children, dir) };
-      return n;
-    });
-  }
-
   async function toggle(node: Node): Promise<void> {
-    const opening = !node.open;
-    nodes = findAndToggle(nodes, node);
-    if (!opening) return;
+    node.open = !node.open;
+    if (!node.open) return;
     if (node.children.length === 0) {
       node.loading = true;
       const timer = setTimeout(() => {
         node.showSpin = true;
       }, 200);
-      spinnerTimers.set(node.path, timer);
       try {
-        const children = await loadChildren(node.path, node.depth + 1);
-        node.children = children;
+        node.children = await loadChildren(node.path, node.depth + 1);
       } finally {
         clearTimeout(timer);
-        spinnerTimers.delete(node.path);
         node.loading = false;
         node.showSpin = false;
       }

@@ -7,6 +7,7 @@ import {
   onFsChange,
   onOpenFileEvent,
   readTextFile,
+  takePendingOpenFile,
   watchPaths,
   writeTextFile,
 } from "../fs/tauri";
@@ -138,6 +139,9 @@ export async function wireFsChange(): Promise<void> {
   fsChangeWired = true;
   await onFsChange((e) => onFsChangeDebounced(e));
   await onOpenFileEvent((path) => void openFile(path));
+  // 冷启动时 Opened 事件先于前端监听器到达，Rust 侧暂存于 PENDING_OPEN，此处补取
+  const pending = await takePendingOpenFile();
+  if (pending) await openFile(pending, { force: true });
   await onDrop((paths) => {
     const p = paths[0];
     if (!p) return;
@@ -148,7 +152,7 @@ export async function wireFsChange(): Promise<void> {
 
 export async function restoreSession(): Promise<void> {
   if (settings.session.folder) app.workspaceRoot = settings.session.folder;
-  if (settings.session.file) {
+  if (settings.session.file && !app.currentPath) {
     await openFile(settings.session.file, { force: true });
     if (app.error) {
       app.error = null;

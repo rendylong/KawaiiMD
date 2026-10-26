@@ -42,6 +42,10 @@ export async function watchPaths(paths: string[]): Promise<void> {
   return invoke<void>("watch_paths", { paths });
 }
 
+export async function takePendingOpenFile(): Promise<string | null> {
+  return invoke<string | null>("take_pending_open_file");
+}
+
 export async function onFsChange(cb: (e: FsChange) => void): Promise<() => void> {
   const un = await listen<FsChange>("fs-change", (ev) => cb(ev.payload));
   return un;

@@ -51,16 +51,19 @@
   }
 
   onMount(() => {
-    void wireFsChange();
-    void restoreSession();
     void (async () => {
+      await wireFsChange();
+      await restoreSession();
       const { getCurrentWindow } = await import("@tauri-apps/api/window");
       const win = getCurrentWindow();
-      win.onCloseRequested(async (e) => {
-        if (!app.dirty) return;
+      // Tauri v2 注册 onCloseRequested 即拦截原生关闭：统一显式决定后 destroy
+      await win.onCloseRequested(async (e) => {
         e.preventDefault();
-        const ok = await confirmDiscard(S.dirtyClose);
-        if (ok) await win.destroy();
+        if (app.dirty) {
+          const ok = await confirmDiscard(S.dirtyClose);
+          if (!ok) return;
+        }
+        await win.destroy();
       });
     })();
   });

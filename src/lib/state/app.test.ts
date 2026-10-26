@@ -24,7 +24,7 @@ vi.mock("$lib/fs/tauri", () => ({
   dirname: (p: string) => p.split("/").slice(0, -1).join("/") || "/",
 }));
 
-const { app, openFile, openFolder, saveCurrent, switchMode, updateSource } = await import("./app.svelte");
+const { app, openFile, openFolder, restoreSession, saveCurrent, switchMode, updateSource } = await import("./app.svelte");
 const { settings } = await import("$lib/settings.svelte");
 
 describe("openFile", () => {
@@ -97,5 +97,14 @@ describe("openFile", () => {
     switchMode();
     expect(app.mode).toBe("read");
     expect(app.doc?.toc).toEqual([{ id: "新标题", level: 1, text: "新标题" }]);
+  });
+
+  it("restoreSession：已有当前文件（如启动期双击打开）则不再恢复会话文件", async () => {
+    settings.session = { file: "/d/old.md", folder: null };
+    app.currentPath = "/d/new.md";
+    await restoreSession();
+    expect(app.currentPath).toBe("/d/new.md");
+    settings.session = { file: null, folder: null };
+    app.currentPath = null;
   });
 });
