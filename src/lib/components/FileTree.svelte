@@ -2,6 +2,7 @@
   import { app, openFile } from "../state/app.svelte";
   import { convertFileSrc, dirname, listDir, revealInFinder } from "../fs/tauri";
   import { classifyEntry, sortEntries } from "../fs/entries";
+  import { nextStickyRoot } from "../fs/tree-root";
   import Icon from "./Icon.svelte";
 
   type Node = {
@@ -18,8 +19,16 @@
   let root = $state<{ path: string } | null>(null);
   let nodes = $state<Node[]>([]);
   let container: HTMLElement | undefined = $state();
+  let stickyRoot = $state<string | null>(null);
 
-  const rootPath = $derived(app.workspaceRoot ?? (app.currentPath ? dirname(app.currentPath) : null));
+  // 工作区优先；否则树根粘住首个挂载目录，仅当新文件在树外时迁移，
+  // 避免点子目录文件后整棵树搬进子目录、上级不可返回。
+  const rootPath = $derived(app.workspaceRoot ?? stickyRoot ?? (app.currentPath ? dirname(app.currentPath) : null));
+
+  $effect(() => {
+    const candidate = app.currentPath ? dirname(app.currentPath) : null;
+    stickyRoot = nextStickyRoot(stickyRoot, candidate);
+  });
 
   $effect(() => {
     const r = rootPath;
