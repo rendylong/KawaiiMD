@@ -65,4 +65,14 @@ export async function revealInFinder(path: string): Promise<void> {
   return revealItemInDir(path);
 }
 
+export async function openExternalUrl(url: string): Promise<void> {
+  const { openUrl } = await import("@tauri-apps/plugin-opener");
+  return openUrl(url);
+}
+
+export async function confirmDiscard(message: string): Promise<boolean> {
+  const { ask } = await import("@tauri-apps/plugin-dialog");
+  return ask(message, { title: "墨阅", kind: "warning" });
+}
+
 export { convertFileSrc };

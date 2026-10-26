@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { joinPath, resolveImageSrcs } from "./images";
+import { collectImagePaths, joinPath, resolveImageSrcs } from "./images";
 
 describe("resolveImageSrcs", () => {
   const calls: string[] = [];
@@ -29,6 +29,12 @@ describe("resolveImageSrcs", () => {
     expect(calls).toContain("/Users/x/docs/中文/图.png");
   });
 
+  it("markdown-it 规范化的百分号编码 src 先解码再拼接（C4）", () => {
+    calls.length = 0;
+    resolveImageSrcs('<img src="%E4%B8%AD%E6%96%87/%E5%9B%BE.png">', "/Users/x/docs", toUrl);
+    expect(calls).toEqual(["/Users/x/docs/中文/图.png"]);
+  });
+
   it("http/data/绝对路径不经 toUrl", () => {
     calls.length = 0;
     const html = '<img src="https://a.b/c.png"><img src="data:image/png;base64,xx"><img src="/abs.png"><img src="asset:///keep.png">';
@@ -46,5 +52,12 @@ describe("joinPath", () => {
     expect(joinPath("/a/b", "./c.png")).toBe("/a/b/c.png");
     expect(joinPath("/a/b", "../c.png")).toBe("/a/c.png");
     expect(joinPath("/a/b", "../../c.png")).toBe("/c.png");
+  });
+});
+
+describe("collectImagePaths", () => {
+  it("收集相对图片的绝对路径（含解码），跳过外链", () => {
+    const html = '<img src="%E4%B8%AD%E6%96%87/a.png"><img src="../b.png"><img src="https://x/c.png"><img src="data:image/png;base64,xx">';
+    expect(collectImagePaths(html, "/notes/2026")).toEqual(["/notes/2026/中文/a.png", "/notes/b.png"]);
   });
 });

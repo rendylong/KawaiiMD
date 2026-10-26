@@ -1,4 +1,5 @@
 import {
+  confirmDiscard,
   convertFileSrc,
   dirname,
   grantAssetScope,
@@ -7,6 +8,7 @@ import {
   onOpenFileEvent,
   readTextFile,
   watchPaths,
+  writeTextFile,
 } from "../fs/tauri";
 import { restoreScroll } from "../dom/scroll";
 import { renderForFile } from "../markdown/pipeline";
@@ -20,12 +22,13 @@ export const app = $state({
   workspaceRoot: null as string | null,
   mode: "read" as "read" | "edit",
   doc: null as Doc | null,
+  docSource: null as string | null,
+  savedSource: null as string | null,
   error: null as string | null,
   loading: false,
   conflictPath: null as string | null,
   dirty: false,
   savedMtime: null as number | null,
-  docSource: null as string | null,
   lightboxSrc: null as string | null,
 });
 
@@ -33,12 +36,48 @@ export function setError(msg: string): void {
   app.error = msg;
 }
 
-export async function openFile(path: string): Promise<void> {
+export function updateSource(src: string): void {
+  app.docSource = src;
+  app.dirty = src !== app.savedSource;
+}
+
+export async function saveCurrent(): Promise<boolean> {
+  if (!app.currentPath || app.docSource === null) return true;
+  try {
+    app.savedMtime = await writeTextFile(app.currentPath, app.docSource);
+    app.savedSource = app.docSource;
+    app.dirty = false;
+    return true;
+  } catch (e) {
+    setError(e instanceof Error ? e.message : String(e));
+    return false;
+  }
+}
+
+export function switchMode(): void {
+  if (!app.doc) return;
+  if (app.mode === "read") {
+    app.mode = "edit";
+  } else {
+    if (app.dirty && app.docSource !== null && app.currentPath) {
+      app.doc = renderForFile(app.docSource, dirname(app.currentPath));
+    }
+    app.mode = "read";
+  }
+}
+
+export async function openFile(path: string, opts?: { force?: boolean }): Promise<void> {
+  if (!opts?.force && app.dirty && path !== app.currentPath) {
+    const ok = await confirmDiscard(`${S.dirtySwitch}: ${path}`);
+    if (!ok) return;
+  }
   app.loading = true;
   try {
     await grantAssetScope(dirname(path));
     const src = await readTextFile(path);
     app.docSource = src;
+    app.savedSource = src;
+    app.dirty = false;
     app.doc = renderForFile(src, dirname(path));
     app.currentPath = path;
     app.error = null;
@@ -89,7 +128,7 @@ const onFsChangeDebounced = debounce300((e: { path: string; kind: "modify" | "re
     return;
   }
   const id = nearestHeadingId();
-  void openFile(e.path).then(() => restoreAfterReload(id));
+  void openFile(e.path, { force: true }).then(() => restoreAfterReload(id));
 });
 
 let fsChangeWired = false;
@@ -110,11 +149,12 @@ export async function wireFsChange(): Promise<void> {
 export async function restoreSession(): Promise<void> {
   if (settings.session.folder) app.workspaceRoot = settings.session.folder;
   if (settings.session.file) {
-    await openFile(settings.session.file);
+    await openFile(settings.session.file, { force: true });
     if (app.error) {
       app.error = null;
       app.currentPath = null;
       app.doc = null;
+      app.docSource = null;
     }
   }
 }

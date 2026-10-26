@@ -485,6 +485,15 @@ button {
   display: inline-block;
 }
 
+.save-banner {
+  background: var(--accent-weak);
+  color: var(--fg);
+  border-bottom: 1px solid var(--line);
+  font-size: 12.5px;
+  padding: 6px 14px;
+  word-break: break-all;
+}
+
 .conflict-overlay {
   position: fixed;
   inset: 0;

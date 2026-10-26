@@ -24,5 +24,7 @@ export const S = {
   conflictReload: "重载外部版本",
   conflictKeep: "保留我的修改",
   dirtyClose: "有未保存的修改，确定关闭？",
+  dirtySwitch: "有未保存的修改，切换将丢弃",
+  saveFailedBanner: "保存失败",
   emptyReader: "尚未打开文件",
 } as const;

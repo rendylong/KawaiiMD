@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { S } from "$lib/ui-strings";
-  import { resolvedTheme, setThemeMode, settings } from "$lib/settings.svelte";
-  import { app, openFile, openFolder, restoreSession, wireFsChange } from "$lib/state/app.svelte";
-  import { pickFile, pickFolder } from "$lib/fs/tauri";
+  import { resolvedTheme, setThemeMode, setTocCollapsed, setTreeCollapsed, settings } from "$lib/settings.svelte";
+  import { app, openFile, openFolder, restoreSession, saveCurrent, switchMode, wireFsChange } from "$lib/state/app.svelte";
+  import { confirmDiscard, dirname, pickFile, pickFolder, revealInFinder } from "$lib/fs/tauri";
   import Icon from "$lib/components/Icon.svelte";
   import ReaderView from "$lib/components/ReaderView.svelte";
   import Welcome from "$lib/components/Welcome.svelte";
@@ -11,7 +11,6 @@
   import TocPanel from "$lib/components/TocPanel.svelte";
   import EditorView from "$lib/components/EditorView.svelte";
   import Lightbox from "$lib/components/Lightbox.svelte";
-  import { setTocCollapsed, setTreeCollapsed } from "$lib/settings.svelte";
 
   function cycleTheme(): void {
     setThemeMode(settings.themeMode === "system" ? "light" : settings.themeMode === "light" ? "dark" : "system");
@@ -32,11 +31,6 @@
     return path.split("/").pop() ?? "";
   }
 
-  onMount(() => {
-    void wireFsChange();
-    void restoreSession();
-  });
-
   function onKeydown(e: KeyboardEvent): void {
     if (!(e.metaKey || e.ctrlKey)) return;
     const k = e.key.toLowerCase();
@@ -49,11 +43,27 @@
       else void onOpenFile();
     } else if (k === "e" && app.doc) {
       e.preventDefault();
-      app.mode = app.mode === "edit" ? "read" : "edit";
+      switchMode();
     } else if (k === "s" && app.mode === "edit") {
       e.preventDefault();
+      void saveCurrent();
     }
   }
+
+  onMount(() => {
+    void wireFsChange();
+    void restoreSession();
+    void (async () => {
+      const { getCurrentWindow } = await import("@tauri-apps/api/window");
+      const win = getCurrentWindow();
+      win.onCloseRequested(async (e) => {
+        if (!app.dirty) return;
+        e.preventDefault();
+        const ok = await confirmDiscard(S.dirtyClose);
+        if (ok) await win.destroy();
+      });
+    })();
+  });
 </script>
 
 <svelte:window onkeydown={onKeydown} />
@@ -69,7 +79,12 @@
       </svg>
       <span>{S.appName}</span>
     </div>
-    <div class="tb-file" title={S.revealInFinder}>{basename(app.currentPath)}</div>
+    <button
+      type="button"
+      class="tb-file"
+      title={S.revealInFinder}
+      onclick={() => app.currentPath && void revealInFinder(app.currentPath).catch(() => {})}
+    >{basename(app.currentPath)}</button>
     <div class="tb-actions">
       <button
         type="button"
@@ -92,9 +107,7 @@
         type="button"
         class="mode"
         aria-label={app.mode === "edit" ? S.toRead : S.toEdit}
-        onclick={() => {
-          if (app.doc) app.mode = app.mode === "edit" ? "read" : "edit";
-        }}
+        onclick={switchMode}
       >
         <Icon name="pencilLine" />
         <span>{app.mode === "edit" ? S.readMode : S.editMode}</span>
@@ -102,6 +115,9 @@
       </button>
     </div>
   </header>
+  {#if app.error && app.mode === "edit"}
+    <div class="save-banner" role="alert">{S.saveFailedBanner}：{app.error}</div>
+  {/if}
   <div class="main">
     {#if !settings.treeCollapsed}
       <aside class="side tree" aria-label="文件树">
@@ -124,5 +140,26 @@
     {/if}
   </div>
 </div>
+
+{#if app.conflictPath}
+  <div class="conflict-overlay" role="alertdialog" aria-label={S.conflictTitle}>
+    <div class="conflict-box">
+      <div class="c-title">{S.conflictTitle}</div>
+      <div class="c-path">{app.conflictPath}</div>
+      <div class="c-actions">
+        <button
+          type="button"
+          class="pri"
+          onclick={() => {
+            const p = app.conflictPath;
+            app.conflictPath = null;
+            if (p) void openFile(p, { force: true });
+          }}>{S.conflictReload}</button
+        >
+        <button type="button" onclick={() => (app.conflictPath = null)}>{S.conflictKeep}</button>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <Lightbox />

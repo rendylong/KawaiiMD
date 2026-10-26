@@ -26,6 +26,8 @@ fn mtime_of(path: &std::path::Path) -> u128 {
 
 // notify-debouncer-mini 0.7 仅发 Any/AnyContinuous；以路径存在性区分 remove/modify，
 // create 归并为 modify（自写回环由前端 mtime 比对抑制）。
+// 供测试直接驱动 watcher 的原语；生产路径走 watch_paths 的常驻单例。
+#[allow(dead_code)]
 pub fn start_watcher<F>(paths: Vec<PathBuf>, on_event: F) -> Result<(), String>
 where
     F: Fn(String, String, u128) + Send + 'static,
@@ -54,6 +56,8 @@ where
 }
 
 static WATCHED: Mutex<Option<HashSet<PathBuf>>> = Mutex::new(None);
+static DEBOUNCER: Mutex<Option<notify_debouncer_mini::Debouncer<notify_debouncer_mini::notify::RecommendedWatcher>>> =
+    Mutex::new(None);
 
 #[tauri::command]
 pub fn watch_paths(app: tauri::AppHandle, paths: Vec<String>) -> Result<(), String> {
@@ -73,10 +77,37 @@ pub fn watch_paths(app: tauri::AppHandle, paths: Vec<String>) -> Result<(), Stri
     if fresh.is_empty() {
         return Ok(());
     }
-    let emitter = app.clone();
-    start_watcher(fresh, move |path, kind, mtime| {
-        let _ = emitter.emit("fs-change", FsChange { path, kind, mtime });
-    })
+
+    let mut debouncer_guard = DEBOUNCER.lock().map_err(|e| e.to_string())?;
+    if debouncer_guard.is_none() {
+        let emitter = app.clone();
+        let debouncer = new_debouncer(Duration::from_millis(200), move |res: DebounceEventResult| {
+            let Ok(events) = res else { return };
+            for ev in events {
+                let kind = if ev.path.exists() { "modify" } else { "remove" };
+                let _ = emitter.emit(
+                    "fs-change",
+                    FsChange {
+                        path: ev.path.to_string_lossy().into_owned(),
+                        kind: kind.to_string(),
+                        mtime: mtime_of(&ev.path),
+                    },
+                );
+            }
+        })
+        .map_err(|e| e.to_string())?;
+        *debouncer_guard = Some(debouncer);
+    }
+
+    if let Some(debouncer) = debouncer_guard.as_mut() {
+        for p in &fresh {
+            debouncer
+                .watcher()
+                .watch(p, RecursiveMode::NonRecursive)
+                .map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]
