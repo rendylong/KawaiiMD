@@ -426,6 +426,41 @@ button {
   color: var(--fg-2);
 }
 
+/* —— TOC —— */
+.toc-panel {
+  padding: 14px 8px;
+  font-size: 13px;
+}
+
+.toc-panel .c-h {
+  font-size: 11px;
+  color: var(--fg-3);
+  letter-spacing: 0.06em;
+  padding: 0 10px 10px;
+}
+
+.toc-panel a {
+  display: block;
+  color: var(--fg-2);
+  text-decoration: none;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border-left: 2px solid transparent;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toc-panel a:hover {
+  color: var(--fg);
+}
+
+.toc-panel a.cur {
+  color: var(--accent);
+  background: var(--accent-weak);
+  border-left-color: var(--accent);
+}
+
 /* —— 文件树 —— */
 .file-tree {
   padding: 10px 6px;

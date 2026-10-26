@@ -7,7 +7,8 @@
   import ReaderView from "$lib/components/ReaderView.svelte";
   import Welcome from "$lib/components/Welcome.svelte";
   import FileTree from "$lib/components/FileTree.svelte";
-  import { setTreeCollapsed } from "$lib/settings.svelte";
+  import TocPanel from "$lib/components/TocPanel.svelte";
+  import { setTocCollapsed, setTreeCollapsed } from "$lib/settings.svelte";
 
   function cycleTheme(): void {
     setThemeMode(settings.themeMode === "system" ? "light" : settings.themeMode === "light" ? "dark" : "system");
@@ -63,6 +64,12 @@
         aria-pressed={settings.treeCollapsed}
         onclick={() => setTreeCollapsed(!settings.treeCollapsed)}
       ><Icon name="panelLeft" /></button>
+      <button
+        type="button"
+        aria-label={S.toggleToc}
+        aria-pressed={settings.tocCollapsed}
+        onclick={() => setTocCollapsed(!settings.tocCollapsed)}
+      ><Icon name="listTree" /></button>
       <button type="button" aria-label={S.openFileHint} onclick={onOpenFile}><Icon name="fileText" /></button>
       <button type="button" aria-label={S.openFolderHint} onclick={onOpenFolder}><Icon name="folderOpen" /></button>
       <button type="button" aria-label={S.themeHint} onclick={cycleTheme}>
@@ -87,6 +94,10 @@
         <ReaderView />
       {/if}
     </section>
-    <aside class="side toc" aria-label="文档目录"></aside>
+    {#if !settings.tocCollapsed}
+      <aside class="side toc" aria-label="文档目录">
+        <TocPanel />
+      </aside>
+    {/if}
   </div>
 </div>
