@@ -1,0 +1,35 @@
+/* 设计已锁定（2026-10-26 设计评审）：B 墨青 · 亮/暗 全套 token */
+:root[data-theme="light"] {
+  --bg: #fafaf9;
+  --bg-side: #f1f3f2;
+  --fg: #191d1c;
+  --fg-2: #56605d;
+  --fg-3: #828c89;
+  --line: #e2e7e5;
+  --accent: #237a6f;
+  --accent-weak: #e4f0ee;
+  --code-bg: #f1f4f3;
+  --sel: rgba(35, 122, 111, 0.2);
+}
+
+:root[data-theme="dark"] {
+  --bg: #151817;
+  --bg-side: #1b1f1e;
+  --fg: #e3e8e6;
+  --fg-2: #a0a9a6;
+  --fg-3: #6a7371;
+  --line: #2c3331;
+  --accent: #56b3a4;
+  --accent-weak: #1f312d;
+  --code-bg: #202523;
+  --sel: rgba(86, 179, 164, 0.28);
+}
+
+:root {
+  --font-ui: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+  --font-serif: "Songti SC", "Noto Serif CJK SC", serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --doc-size: 17px;
+  --doc-lh: 1.8;
+  --doc-measure: 42em;
+}
