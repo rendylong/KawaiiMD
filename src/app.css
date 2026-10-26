@@ -133,9 +133,44 @@ button {
 }
 
 .reader {
+  position: relative;
   flex: 1;
   min-width: 0;
   overflow: auto;
+  /* 中间视图用悬浮指示条替代常驻原生滚动条（overlay-scrollbar.ts） */
+  scrollbar-width: none;
+}
+
+.reader::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.scroll-thumb {
+  position: absolute;
+  top: 0;
+  right: 2px;
+  width: 4px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--fg) 24%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 5;
+  transition:
+    opacity 0.18s ease,
+    width 0.12s ease,
+    right 0.12s ease;
+}
+
+.scroll-thumb.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.scroll-thumb.drag {
+  width: 6px;
+  right: 1px;
+  background: color-mix(in srgb, var(--fg) 38%, transparent);
 }
 
 @media (max-width: 820px) {

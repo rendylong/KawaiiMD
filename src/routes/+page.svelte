@@ -4,6 +4,7 @@
   import { resolvedTheme, setThemeMode, setTocCollapsed, setTreeCollapsed, settings } from "$lib/settings.svelte";
   import { app, openFile, openFolder, restoreSession, saveCurrent, switchMode, wireFsChange } from "$lib/state/app.svelte";
   import { confirmDiscard, dirname, pickFile, pickFolder, revealInFinder } from "$lib/fs/tauri";
+  import { overlayScrollbar } from "$lib/dom/overlay-scrollbar";
   import Icon from "$lib/components/Icon.svelte";
   import ReaderView from "$lib/components/ReaderView.svelte";
   import Welcome from "$lib/components/Welcome.svelte";
@@ -127,7 +128,7 @@
         <FileTree />
       </aside>
     {/if}
-    <section class="reader">
+    <section class="reader" use:overlayScrollbar>
       {#if app.currentPath === null && app.error === null}
         <Welcome />
       {:else if app.mode === "edit"}
