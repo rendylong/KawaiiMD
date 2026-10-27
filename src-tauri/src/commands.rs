@@ -13,6 +13,7 @@ fn err_desc(e: &std::io::Error) -> &'static str {
         std::io::ErrorKind::NotFound => "不存在",
         std::io::ErrorKind::PermissionDenied => "无权限",
         std::io::ErrorKind::InvalidData => "非 UTF-8",
+        std::io::ErrorKind::AlreadyExists => "已存在",
         _ => "IO 错误",
     }
 }
@@ -23,6 +24,19 @@ pub fn read_text_impl(path: &Path) -> Result<String, String> {
 
 pub fn write_text_impl(path: &Path, contents: &str) -> Result<u128, String> {
     fs::write(path, contents).map_err(|e| format!("写入失败({}): {}", err_desc(&e), path.display()))?;
+    mtime_ms(path)
+}
+
+// create_new：仅当文件不存在时创建，原子保证绝不覆盖已有文件（新建文档语义）
+pub fn create_text_impl(path: &Path, contents: &str) -> Result<u128, String> {
+    use std::io::Write;
+    let mut f = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(path)
+        .map_err(|e| format!("创建失败({}): {}", err_desc(&e), path.display()))?;
+    f.write_all(contents.as_bytes())
+        .map_err(|e| format!("写入失败({}): {}", err_desc(&e), path.display()))?;
     mtime_ms(path)
 }
 
@@ -55,6 +69,11 @@ pub fn read_text_file(path: String) -> Result<String, String> {
 #[tauri::command]
 pub fn write_text_file(path: String, contents: String) -> Result<u128, String> {
     write_text_impl(Path::new(&path), &contents)
+}
+
+#[tauri::command]
+pub fn create_text_file(path: String, contents: String) -> Result<u128, String> {
+    create_text_impl(Path::new(&path), &contents)
 }
 
 #[tauri::command]
@@ -108,6 +127,34 @@ mod tests {
         let mtime = write_text_impl(&f, "abc 中文").unwrap();
         assert_eq!(fs::read_to_string(&f).unwrap(), "abc 中文");
         assert!(mtime > 0);
+    }
+
+    #[test]
+    fn create_text_new_file_writes_content_and_mtime() {
+        let dir = tempfile::tempdir().unwrap();
+        let f = dir.path().join("new.md");
+        let mtime = create_text_impl(&f, "# 未命名\n").unwrap();
+        assert_eq!(fs::read_to_string(&f).unwrap(), "# 未命名\n");
+        assert!(mtime > 0);
+    }
+
+    #[test]
+    fn create_text_refuses_to_overwrite_existing() {
+        let dir = tempfile::tempdir().unwrap();
+        let f = dir.path().join("a.md");
+        fs::write(&f, "旧内容").unwrap();
+        let err = create_text_impl(&f, "新内容").unwrap_err();
+        assert!(err.contains("已存在"), "err: {err}");
+        assert!(err.contains(f.to_str().unwrap()), "err: {err}");
+        assert_eq!(fs::read_to_string(&f).unwrap(), "旧内容");
+    }
+
+    #[test]
+    fn create_text_missing_parent_reports_not_found() {
+        let dir = tempfile::tempdir().unwrap();
+        let f = dir.path().join("nope/x.md");
+        let err = create_text_impl(&f, "x").unwrap_err();
+        assert!(err.contains("不存在"), "err: {err}");
     }
 
     #[test]

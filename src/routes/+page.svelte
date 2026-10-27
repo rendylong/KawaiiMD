@@ -32,6 +32,19 @@
     if (p) await openFolder(p);
   }
 
+  // 「当前目录」：当前文件所在目录；无文件时用工作区根。皆无则入口禁用。
+  function newFileTargetDir(): string | null {
+    return app.currentPath ? dirname(app.currentPath) : app.workspaceRoot;
+  }
+
+  function onNewFile(): void {
+    const dir = newFileTargetDir();
+    if (!dir) return;
+    // 命名行在文件树中就地出现，树收起时先展开
+    if (settings.treeCollapsed) setTreeCollapsed(false);
+    app.creating = dir;
+  }
+
   function basename(path: string | null): string {
     if (!path) return "";
     return path.split("/").pop() ?? "";
@@ -57,6 +70,9 @@
     } else if (k === "s" && app.mode === "edit") {
       e.preventDefault();
       void saveCurrent();
+    } else if (k === "n") {
+      e.preventDefault();
+      onNewFile();
     }
   }
 
@@ -125,6 +141,13 @@
       ><Icon name="listTree" raw strokeWidth={2} /></button>
       <button type="button" aria-label={S.openFileHint} data-tip={S.openFileHint} onclick={onOpenFile}><Icon name="fileText" raw strokeWidth={2} /></button>
       <button type="button" aria-label={S.openFolderHint} data-tip={S.openFolderHint} onclick={onOpenFolder}><Icon name="folderOpen" raw strokeWidth={2} /></button>
+      <button
+        type="button"
+        aria-label={S.newFileHint}
+        data-tip={newFileTargetDir() ? S.newFileHint : S.newFileNoTarget}
+        disabled={!newFileTargetDir()}
+        onclick={onNewFile}
+      ><Icon name="filePlus" raw strokeWidth={2} /></button>
       <button type="button" aria-label={S.themeHint} data-tip={S.themeHint} onclick={toggleTheme}>
         <Icon name={resolvedTheme() === "dark" ? "sun" : "moon"} raw strokeWidth={2} />
       </button>

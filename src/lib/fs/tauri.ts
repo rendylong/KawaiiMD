@@ -15,6 +15,11 @@ export async function writeTextFile(path: string, contents: string): Promise<num
   return invoke<number>("write_text_file", { path, contents });
 }
 
+// create_new 语义：仅当目标不存在时创建，已存在时报错，绝不覆盖
+export async function createTextFile(path: string, contents: string): Promise<number> {
+  return invoke<number>("create_text_file", { path, contents });
+}
+
 export async function listDir(path: string): Promise<DirEntry[]> {
   return invoke<DirEntry[]>("list_dir", { path });
 }

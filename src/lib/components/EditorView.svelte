@@ -74,6 +74,8 @@
     const editor = new EditorView({
       state: EditorState.create({
         doc: src,
+        // 新建文档从末尾接着写最自然；打开旧文档编辑通常也是文末追加
+        selection: { anchor: src.length },
         extensions: [
           history(),
           keymap.of([
@@ -94,6 +96,7 @@
       parent: editorHost,
     });
     view = editor;
+    editor.focus();
     untrack(() => void refreshPreview());
     const onEditorScroll = () => syncPreviewToEditor(editor);
     const onPreviewScroll = () => syncEditorToPreview(editor);

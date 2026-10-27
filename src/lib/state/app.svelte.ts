@@ -1,6 +1,7 @@
 import {
   confirmDiscard,
   convertFileSrc,
+  createTextFile,
   dirname,
   grantAssetScope,
   onDrop,
@@ -11,6 +12,7 @@ import {
   watchPaths,
   writeTextFile,
 } from "../fs/tauri";
+import { finalizeName } from "../fs/new-file";
 import { restoreScroll } from "../dom/scroll";
 import { renderForFile } from "../markdown/pipeline";
 import { debounce300, decideReload } from "./reload";
@@ -32,6 +34,8 @@ export const app = $state({
   dirty: false,
   savedMtime: null as number | null,
   lightboxSrc: null as string | null,
+  // 就地新建的目标目录路径（文件树据此显示命名行），null = 未在新建
+  creating: null as string | null,
 });
 
 export function setError(msg: string): void {
@@ -66,6 +70,29 @@ export function switchMode(): void {
     }
     app.mode = "read";
   }
+}
+
+export type CreateResult = { ok: true } | { ok: false; cancelled?: boolean; error?: string };
+
+// 在 dir 下以 rawName 新建 md：脏确认在前（取消则不落盘），
+// create_new 原子创建，成功后打开并直接进入编辑模式。
+export async function createFileAt(dir: string, rawName: string): Promise<CreateResult> {
+  const name = finalizeName(rawName);
+  const path = `${dir}/${name}`;
+  if (app.dirty && path !== app.currentPath) {
+    const okToSwitch = await confirmDiscard(`${S.dirtySwitch}: ${path}`);
+    if (!okToSwitch) return { ok: false, cancelled: true };
+  }
+  try {
+    const base = name.replace(/\.md$/i, "");
+    await createTextFile(path, `# ${base}\n`);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
+  app.creating = null;
+  await openFile(path, { force: true });
+  app.mode = "edit";
+  return { ok: true };
 }
 
 export async function openFile(path: string, opts?: { force?: boolean }): Promise<void> {

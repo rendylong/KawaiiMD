@@ -123,6 +123,17 @@ button {
   padding: 0 10px;
 }
 
+/* 无目标可用时置灰（如未打开任何文件/文件夹时的新建） */
+.tb-actions button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.tb-actions button:disabled:hover {
+  background: none;
+  color: var(--fg-2);
+}
+
 /* —— 工具栏 hover chips（macOS 风格提示气泡） —— */
 .tb-actions button[data-tip]::after {
   content: attr(data-tip);
@@ -827,13 +838,125 @@ button {
 }
 
 .file-tree .t-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
   font-size: 11px;
   color: var(--fg-3);
   letter-spacing: 0.06em;
   padding: 2px 8px 8px;
   white-space: nowrap;
   overflow: hidden;
+}
+
+.file-tree .t-head .t-head-name {
+  overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* 行容器：t-item 与 hover 时浮现的新建 ➕ 是兄弟按钮（button 不能嵌套 button） */
+.file-tree .t-row {
+  position: relative;
+}
+
+.file-tree .row-add,
+.file-tree .head-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: none;
+  border-radius: 5px;
+  color: var(--fg-3);
+  cursor: pointer;
+  flex: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.file-tree .row-add {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.file-tree .head-add {
+  height: 16px;
+}
+
+.file-tree .t-row:hover .row-add,
+.file-tree .t-row:focus-within .row-add,
+.file-tree .t-head:hover .head-add,
+.file-tree .t-head:focus-within .head-add {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.file-tree .row-add:hover,
+.file-tree .head-add:hover {
+  background: var(--sel);
+  color: var(--accent);
+}
+
+/* —— 就地命名行（Finder 式新建） —— */
+.file-tree .edit-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 8px;
+}
+
+.file-tree .edit-item .tw {
+  display: inline-flex;
+  width: 12px;
+  flex: none;
+}
+
+.file-tree .edit-item svg {
+  flex: none;
+}
+
+.file-tree .edit-item input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 5px;
+  padding: 2px 6px;
+  outline: none;
+}
+
+.file-tree .edit-item input:focus {
+  box-shadow: 0 0 0 2px var(--sel);
+}
+
+.file-tree .edit-item input.shake {
+  animation: tree-shake 0.28s ease;
+}
+
+.file-tree .t-err {
+  margin: 3px 0 4px 47px;
+  font-size: 11px;
+  color: var(--danger);
+  overflow-wrap: anywhere;
+}
+
+@keyframes tree-shake {
+  20% {
+    transform: translateX(-3px);
+  }
+  50% {
+    transform: translateX(3px);
+  }
+  80% {
+    transform: translateX(-2px);
+  }
 }
 
 .file-tree .t-item {

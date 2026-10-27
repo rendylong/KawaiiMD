@@ -10,6 +10,7 @@
   --accent-weak: #e4f0ee;
   --code-bg: #f1f4f3;
   --sel: rgba(35, 122, 111, 0.2);
+  --danger: #b3453c;
 }
 
 :root[data-theme="dark"] {
@@ -23,6 +24,7 @@
   --accent-weak: #1f312d;
   --code-bg: #202523;
   --sel: rgba(86, 179, 164, 0.28);
+  --danger: #e08179;
 }
 
 :root {
