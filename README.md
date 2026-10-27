@@ -1,30 +1,67 @@
 # KawaiiMD
 
-本地 Markdown 阅读器（macOS，Tauri v2 + Svelte 5）。
+**[简体中文](README.zh-CN.md)** · English
 
-- 双击/拖拽/文件树打开 `.md` `.markdown` `.mkd` `.mdx`，GFM 全语法渲染
-- Mermaid 图表（明暗联动、骨架占位、失败降级）
-- 文件夹树懒加载 + 文档目录（TOC）+ 代码高亮复制
-- 编辑模式：分栏实时预览、自动保存（⌘S 立即写回）、按标题锚点滚动同步
-- 外部修改自动刷新（≤0.5s、滚动保持、冲突对话框）
-- 亮/暗主题（墨青色板）、宋体衬线正文、会话恢复
+A simple, fast, and lightweight Markdown reader & editor for macOS. Free & open-source alternative to Typora.
 
-## 开发
+<p align="center">
+  <img src="docs/screenshots/reader-light.png" width="820" alt="KawaiiMD reading view">
+</p>
+<p align="center">
+  <img src="docs/screenshots/editor-split.png" width="400" alt="KawaiiMD split-pane editing">&nbsp;&nbsp;
+  <img src="docs/screenshots/reader-dark.png" width="400" alt="KawaiiMD dark theme">
+</p>
+
+## Why KawaiiMD
+
+- **Free & open source.** No license key, no activation, no countdown — everything Typora charges for, in the open.
+- **Genuinely lightweight.** A Rust shell over the system WebView, no bundled Chromium. The whole installer is ~4 MB, and it launches in a blink.
+- **Local-first.** Your folders *are* the library: no account, no database, no import step, no lock-in. Files stay plain `.md` on disk.
+- **Reader-grade typography.** Serif body text tuned for Chinese, an ink-teal palette, light/dark themes that Mermaid diagrams and code highlighting follow automatically.
+- **Writing that keeps up.** Split-pane editing with live preview, scroll-synced by heading anchors, CodeMirror 6 inside, auto-save on ⌘S and window close.
+- **Stays out of your way.** Multi-tab with session restore, auto-reload when files change outside (scroll position preserved, conflicts ask before overwriting), macOS-native overlay title bar and scrollbars.
+
+## Features
+
+- Open via double-click, drag & drop, or the sidebar tree — `.md` `.markdown` `.mkd` `.mdx`, full GFM (tables, task lists, alert callouts)
+- Mermaid diagrams — theme-aware, skeleton placeholder while loading, graceful fallback on error
+- Syntax-highlighted code blocks with one-click copy
+- Folder tree with lazy loading + Markdown-only filter, table-of-contents panel
+- External-change watcher: reloads in ≤ 0.5 s, keeps your scroll, asks on conflict
+- Multi-tab (⌘T / ⌘W / ⌘1-9), Finder-style in-tree new file (⌘N), session restore
+- Light/dark themes (⇧⌘T), CJK serif reading column
+
+Want a quick tour? Open the `demo/` folder — `漫游指南.md` walks through everything.
+
+## Install
+
+**From source** (a prebuilt DMG will land in Releases soon):
 
 ```bash
 pnpm install
-pnpm tauri dev     # 开发运行
-pnpm vitest run    # 前端单测
-pnpm check         # svelte-check
-pnpm tauri build   # 打包 dmg（ad-hoc 签名，仅自用）
+pnpm tauri build   # produces src-tauri/target/release/bundle/dmg/*.dmg
 ```
 
-Rust 侧测试：`cd src-tauri && cargo test`。
+Requires Node ≥ 20, pnpm, Rust stable, and Xcode Command Line Tools. The DMG is ad-hoc signed — right-click → Open on first launch if Gatekeeper complains.
 
-要求：Node ≥ 20、pnpm、Rust stable、Xcode CLT（本机 SDK 27.0 与 clang 不兼容时见 `src-tauri/.cargo/config.toml` 的 SDKROOT 固定）。
+## Development
 
-## 文档
+```bash
+pnpm tauri dev     # run the app in dev mode
+pnpm vitest run    # frontend unit tests
+pnpm check         # svelte-check
+cd src-tauri && cargo test   # Rust tests
+```
 
-- 设计：`docs/superpowers/specs/2026-10-26-markdown-reader-app-design.md`
-- 实施计划与评审记录：`docs/superpowers/plans/2026-10-26-kawaimd-markdown-reader.md`
-- 手动验收清单：`MANUAL-QA.md`
+Built with Tauri v2, Svelte 5 + SvelteKit, CodeMirror 6, markdown-it, Mermaid, and highlight.js.
+
+## Documentation
+
+- Design spec: `docs/superpowers/specs/2026-10-26-markdown-reader-app-design.md`
+- Implementation plan & reviews: `docs/superpowers/plans/2026-10-26-kawaimd-markdown-reader.md`
+- Manual QA checklist: `MANUAL-QA.md`
+- Workspace conventions for AI agents: `AGENTS.md`
+
+---
+
+KawaiiMD · [@rendylong](https://github.com/rendylong)
