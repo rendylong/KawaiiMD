@@ -40,8 +40,9 @@ export const S = {
   conflictTitle: "文件已被外部修改",
   conflictReload: "重载外部版本",
   conflictKeep: "保留我的修改",
-  dirtyClose: "有未保存的修改，确定关闭？",
-  dirtySwitch: "有未保存的修改，切换将丢弃",
+  // 以下四条只在自动保存失败时才会出现（正常编辑已自动落盘）
+  dirtyClose: "部分标签自动保存失败，未保存的修改将丢失，确定关闭？",
+  dirtySwitch: "自动保存失败，切换将丢失未保存的修改",
   tabsLabel: "文档标签",
   newTab: "新建标签",
   newTabHint: "新建标签 ⌘T",
@@ -50,8 +51,8 @@ export const S = {
   closeTabHint: "关闭标签 ⌘W",
   closeOtherTabs: "关闭其他标签",
   copyPath: "复制路径",
-  tabDirtyClose: "此标签有未保存的修改，关闭将丢弃，确定？",
-  otherTabsDirtyClose: "其他标签中有未保存的修改，关闭将丢弃，确定？",
+  tabDirtyClose: "此标签自动保存失败，关闭将丢失未保存的修改，确定？",
+  otherTabsDirtyClose: "部分标签自动保存失败，关闭将丢失未保存的修改，确定？",
   saveFailedBanner: "保存失败",
   emptyReader: "尚未打开文件",
 } as const;

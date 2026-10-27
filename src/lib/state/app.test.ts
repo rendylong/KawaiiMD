@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const grantAssetScope = vi.fn(async () => {});
 const readTextFile = vi.fn(async (_path: string) => "# 标题\n\n正文 [^1]\n\n[^1]: 注");
@@ -33,6 +33,7 @@ const {
   closeOtherTabs,
   closeTab,
   createFileAt,
+  flushAutosave,
   newTab,
   openFile,
   openFolder,
@@ -51,12 +52,14 @@ function resetTabs(): void {
 }
 
 describe("openFile / 多标签", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     resetTabs();
+    await flushAutosave(); // 清掉上一用例悬挂的自动保存定时器（此时已无脏标签，不会写盘）
     settings.recents = [];
     settings.session = { files: [], active: null, folder: null };
     grantAssetScope.mockClear();
     readTextFile.mockClear();
+    writeTextFile.mockClear();
     confirmDiscard.mockClear();
     discardAnswer = true;
   });
@@ -87,7 +90,7 @@ describe("openFile / 多标签", () => {
     expect(app.activeId).toBe(app.tabs[0].id);
   });
 
-  it("newTab：强制新标签承载，不询问当前标签的 dirty 确认", async () => {
+  it("newTab：强制新标签承载，不询问确认；切走前脏标签自动落盘", async () => {
     await openFile("/d/a.md");
     updateSource("# 改动");
     discardAnswer = false;
@@ -95,7 +98,8 @@ describe("openFile / 多标签", () => {
     expect(confirmDiscard).not.toHaveBeenCalled();
     expect(app.tabs).toHaveLength(2);
     expect(activeTab()?.path).toBe("/d/b.md");
-    expect(app.tabs[0].dirty).toBe(true);
+    expect(app.tabs[0].dirty).toBe(false); // 激活切换前已自动保存
+    expect(writeTextFile).toHaveBeenCalledWith("/d/a.md", "# 改动");
   });
 
   it("空标签就地填充而非再开新标签", async () => {
@@ -105,19 +109,25 @@ describe("openFile / 多标签", () => {
     expect(activeTab()?.path).toBe("/d/a.md");
   });
 
-  it("默认替换当前标签：dirty 时确认，拒绝则不切换，同意则切换", async () => {
+  it("默认替换当前标签：dirty 先自动保存落盘；保存失败才确认，拒绝则不切换", async () => {
     await openFile("/d/a.md");
     updateSource("# 改动");
-    discardAnswer = false;
     await openFile("/d/b.md");
-    expect(confirmDiscard).toHaveBeenCalled();
+    expect(writeTextFile).toHaveBeenCalledWith("/d/a.md", "# 改动");
+    expect(confirmDiscard).not.toHaveBeenCalled();
     expect(app.tabs).toHaveLength(1);
-    expect(activeTab()?.path).toBe("/d/a.md");
+    expect(activeTab()?.path).toBe("/d/b.md");
+    // 保存失败 → 回退丢弃确认；拒绝则停在原文件
+    updateSource("# 再改");
+    writeTextFile.mockRejectedValueOnce(new Error("disk full"));
+    discardAnswer = false;
+    await openFile("/d/c.md");
+    expect(confirmDiscard).toHaveBeenCalled();
+    expect(activeTab()?.path).toBe("/d/b.md");
     expect(activeTab()?.dirty).toBe(true);
     discardAnswer = true;
-    await openFile("/d/b.md");
-    expect(activeTab()?.path).toBe("/d/b.md");
-    expect(activeTab()?.dirty).toBe(false);
+    await openFile("/d/c.md");
+    expect(activeTab()?.path).toBe("/d/c.md");
   });
 
   it("openFolder 设置 workspaceRoot 并授权", async () => {
@@ -126,7 +136,7 @@ describe("openFile / 多标签", () => {
     expect(grantAssetScope).toHaveBeenCalledWith("/docs");
   });
 
-  it("closeTab：非脏直接关；脏标签取消则保留；关激活标签取邻居；全关回 null", async () => {
+  it("closeTab：非脏直接关；脏标签关闭前自动落盘；保存失败才确认；关激活标签取邻居", async () => {
     await openFile("/d/a.md");
     await openFile("/d/b.md", { newTab: true });
     await openFile("/d/c.md", { newTab: true });
@@ -136,26 +146,38 @@ describe("openFile / 多标签", () => {
 
     expect(await closeTab(app.tabs[0].id)).toBe(true); // a 非脏直接关
     expect(app.tabs.map((t) => t.path)).toEqual(["/d/b.md", "/d/c.md"]);
-    discardAnswer = false;
-    expect(await closeTab(c.id)).toBe(false); // 脏且拒绝
-    expect(app.tabs).toHaveLength(2);
-    discardAnswer = true;
-    expect(await closeTab(c.id)).toBe(true); // c 非激活，关后激活态不动
+    expect(await closeTab(c.id)).toBe(true); // c 脏 → 自动保存后关闭
+    expect(writeTextFile).toHaveBeenCalledWith("/d/c.md", "# 改");
     expect(app.activeId).toBe(b.id);
+    // 保存失败 → 回退确认；拒绝则保留标签
+    updateSource("# 再改");
+    writeTextFile.mockRejectedValueOnce(new Error("disk full"));
+    discardAnswer = false;
+    expect(await closeTab(b.id)).toBe(false);
+    expect(app.tabs.map((t) => t.path)).toEqual(["/d/b.md"]);
+    discardAnswer = true;
     expect(await closeTab(b.id)).toBe(true); // 最后一个，无邻居
     expect(app.tabs).toHaveLength(0);
     expect(app.activeId).toBeNull();
   });
 
-  it("closeOtherTabs：他标签有脏先确认；同意后仅剩保留标签", async () => {
+  it("closeOtherTabs：他标签脏先自动保存；保存失败才确认且拒绝则中止", async () => {
     await openFile("/d/a.md");
     await openFile("/d/b.md", { newTab: true });
     await openFile("/d/c.md", { newTab: true });
     app.activeId = app.tabs[0].id;
     app.tabs[2].dirty = true;
+    expect(await closeOtherTabs(app.tabs[0].id)).toBe(true); // c 自动保存，无确认
+    expect(writeTextFile).toHaveBeenCalledWith("/d/c.md", "# 标题\n\n正文 [^1]\n\n[^1]: 注");
+    expect(confirmDiscard).not.toHaveBeenCalled();
+    expect(app.tabs.map((t) => t.path)).toEqual(["/d/a.md"]);
+    // 保存失败 → 确认；拒绝则中止
+    await openFile("/d/d.md", { newTab: true });
+    app.tabs[1].dirty = true;
+    writeTextFile.mockRejectedValueOnce(new Error("disk full"));
     discardAnswer = false;
     expect(await closeOtherTabs(app.tabs[0].id)).toBe(false);
-    expect(app.tabs).toHaveLength(3);
+    expect(app.tabs.map((t) => t.path)).toEqual(["/d/a.md", "/d/d.md"]);
     discardAnswer = true;
     expect(await closeOtherTabs(app.tabs[0].id)).toBe(true);
     expect(app.tabs.map((t) => t.path)).toEqual(["/d/a.md"]);
@@ -221,5 +243,59 @@ describe("openFile / 多标签", () => {
     await openFile("/d/new.md", { newTab: true });
     await restoreSession();
     expect(app.tabs.map((t) => t.path)).toEqual(["/d/new.md"]);
+  });
+
+  describe("自动保存", () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("编辑停顿 800ms 后自动落盘并清脏", async () => {
+      vi.useFakeTimers();
+      await openFile("/d/a.md");
+      updateSource("# 新内容");
+      await vi.advanceTimersByTimeAsync(799);
+      expect(writeTextFile).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1);
+      expect(writeTextFile).toHaveBeenCalledWith("/d/a.md", "# 新内容");
+      expect(activeTab()?.dirty).toBe(false);
+      expect(activeTab()?.savedSource).toBe("# 新内容");
+    });
+
+    it("连续编辑防抖顺延，只保存最后一次", async () => {
+      vi.useFakeTimers();
+      await openFile("/d/a.md");
+      updateSource("# 一");
+      await vi.advanceTimersByTimeAsync(500);
+      updateSource("# 二");
+      await vi.advanceTimersByTimeAsync(500);
+      updateSource("# 三");
+      await vi.advanceTimersByTimeAsync(800);
+      expect(writeTextFile).toHaveBeenCalledTimes(1);
+      expect(writeTextFile).toHaveBeenCalledWith("/d/a.md", "# 三");
+    });
+
+    it("flushAutosave：立即落盘所有脏标签；全成功返回 true", async () => {
+      await openFile("/d/a.md");
+      updateSource("# 改");
+      expect(await flushAutosave()).toBe(true);
+      expect(writeTextFile).toHaveBeenCalledWith("/d/a.md", "# 改");
+      expect(activeTab()?.dirty).toBe(false);
+    });
+
+    it("写入期间继续编辑：已保存的快照不误标新内容（脏保持，等下轮再存）", async () => {
+      await openFile("/d/a.md");
+      updateSource("# 初稿"); // 制造脏，触发 flush
+      let resolveWrite: (mtime: number) => void;
+      writeTextFile.mockImplementationOnce(
+        () => new Promise<number>((r) => (resolveWrite = r)),
+      );
+      const pending = flushAutosave();
+      updateSource("# 写入期间的新话"); // 写盘尚未返回时击键
+      resolveWrite!(1700000000000);
+      await pending;
+      expect(activeTab()?.savedSource).not.toBe("# 写入期间的新话");
+      expect(activeTab()?.dirty).toBe(true);
+    });
   });
 });

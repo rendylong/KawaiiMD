@@ -16,11 +16,11 @@
   import {
     activeTab,
     activateTab,
-    anyTabDirty,
     app,
     closeOtherTabs,
     closeTab,
     currentPath,
+    flushAutosave,
     newTab,
     openFile,
     openFolder,
@@ -210,10 +210,11 @@
       await restoreSession();
       const { getCurrentWindow } = await import("@tauri-apps/api/window");
       win = getCurrentWindow();
-      // Tauri v2 注册 onCloseRequested 即拦截原生关闭：统一显式决定后 destroy
+      // Tauri v2 注册 onCloseRequested 即拦截原生关闭：统一显式决定后 destroy。
+      // 自动保存：关窗前先落盘，全部成功直接关；有保存失败才回退确认
       await win.onCloseRequested(async (e) => {
         e.preventDefault();
-        if (anyTabDirty()) {
+        if (!(await flushAutosave())) {
           const ok = await confirmDiscard(S.dirtyClose);
           if (!ok) return;
         }
@@ -236,15 +237,7 @@
 
 <div class="app">
   <header class="tb" data-tauri-drag-region>
-    <div class="logo" aria-hidden="true">
-      <svg width="16" height="16" viewBox="0 0 16 16">
-        <path
-          d="M8 1.5C5.5 5 3.5 7.2 3.5 9.8a4.5 4.5 0 0 0 9 0C12.5 7.2 10.5 5 8 1.5Z"
-          fill="var(--accent)"
-        />
-      </svg>
-      <span>{S.appName}</span>
-    </div>
+    <!-- 红绿灯右侧留空作拖拽区（不放 logo 与应用名） -->
     <!-- svelte-ignore a11y_interactive_supports_focus -->
     <div class="tb-tabs" role="tablist" aria-label={S.tabsLabel} data-tauri-drag-region ondblclick={onTabsDblclick}>
       {#each app.tabs as t (t.id)}

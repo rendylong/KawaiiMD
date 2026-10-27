@@ -44,22 +44,11 @@ button {
   align-items: center;
   gap: 10px;
   height: 44px;
-  /* 原生标题栏改 overlay 后红绿灯悬浮在本栏左端，预留其位置 */
+  /* 原生标题栏改 overlay 后红绿灯悬浮在本栏左端，预留其位置（右侧留空拖拽） */
   padding: 0 12px 0 78px;
   background: var(--bg-side);
   border-bottom: 1px solid var(--line);
   flex: none;
-}
-
-.tb .logo {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  /* 非交互，穿透给 data-tauri-drag-region 拖拽 */
-  pointer-events: none;
 }
 
 /* 中部标签区：内嵌于标题栏的标签药丸（多标签）。空白处可拖拽/双击新建 */

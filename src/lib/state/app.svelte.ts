@@ -18,7 +18,7 @@ import { renderForFile } from "../markdown/pipeline";
 import { debounce300, decideReload } from "./reload";
 import { pushRecent, setSession, settings } from "../settings.svelte";
 import { S } from "../ui-strings";
-import { anyDirty, findTabByPath, makeTab, neighborActiveId, tabsToSession, type Tab } from "./tabs";
+import { findTabByPath, makeTab, neighborActiveId, tabsToSession, type Tab } from "./tabs";
 
 // 多标签状态模型：Tab 对象是每份文档状态的唯一真相（路径/内容/模式/脏/滚动/冲突），
 // app 只保留跨标签的全局字段。组件一律经 activeTab() 读当前标签——不做
@@ -61,6 +61,7 @@ function saveActiveScroll(): void {
 export function activateTab(id: number): void {
   if (app.activeId === id || !app.tabs.some((t) => t.id === id)) return;
   saveActiveScroll();
+  void flushAutosave(); // 切走前把防抖窗口里的编辑落盘
   app.activeId = id;
   persistSession();
 }
@@ -68,6 +69,7 @@ export function activateTab(id: number): void {
 // 空标签（正文区显示欢迎页，等待文件填入）
 export function newTab(): void {
   saveActiveScroll();
+  void flushAutosave();
   const t = makeTab();
   app.tabs.push(t);
   app.activeId = t.id;
@@ -83,10 +85,6 @@ function appendTab(): Tab {
   // 首个标签立即成为激活态，避免欢迎页闪一帧
   app.activeId ??= t.id;
   return app.tabs[app.tabs.length - 1];
-}
-
-export function anyTabDirty(): boolean {
-  return anyDirty(app.tabs);
 }
 
 // 读取 + 渲染到指定标签。失败时保留标签原有内存内容（未保存修改不丢、仍可保存），
@@ -139,8 +137,12 @@ export async function openFile(path: string, opts?: { force?: boolean; newTab?: 
     tab = cur; // 空标签就地填充
   } else {
     if (cur?.dirty) {
-      const ok = await confirmDiscard(`${S.dirtySwitch}: ${path}`);
-      if (!ok) return;
+      await flushAutosave();
+      if (cur.dirty) {
+        // 自动保存失败才确认；拒绝则停在原文件
+        const ok = await confirmDiscard(`${S.dirtySwitch}: ${path}`);
+        if (!ok) return;
+      }
     }
     tab = cur ?? appendTab();
   }
@@ -149,14 +151,17 @@ export async function openFile(path: string, opts?: { force?: boolean; newTab?: 
   await loadIntoTab(tab, path);
 }
 
-// 返回 false = 用户在脏确认中取消
+// 返回 false = 用户在脏确认中取消（仅在自动保存失败时出现）
 export async function closeTab(id: number): Promise<boolean> {
   const idx = app.tabs.findIndex((t) => t.id === id);
   if (idx < 0) return true;
   const tab = app.tabs[idx];
   if (tab.dirty) {
-    const ok = await confirmDiscard(`${S.tabDirtyClose}${tab.path ? `：${tab.path}` : ""}`);
-    if (!ok) return false;
+    await flushAutosave();
+    if (tab.dirty) {
+      const ok = await confirmDiscard(`${S.tabDirtyClose}${tab.path ? `：${tab.path}` : ""}`);
+      if (!ok) return false;
+    }
   }
   const wasActive = app.activeId === id;
   const next = neighborActiveId(app.tabs, id, app.activeId);
@@ -168,8 +173,11 @@ export async function closeTab(id: number): Promise<boolean> {
 
 export async function closeOtherTabs(keepId: number): Promise<boolean> {
   if (app.tabs.some((t) => t.id !== keepId && t.dirty)) {
-    const ok = await confirmDiscard(S.otherTabsDirtyClose);
-    if (!ok) return false;
+    await flushAutosave();
+    if (app.tabs.some((t) => t.id !== keepId && t.dirty)) {
+      const ok = await confirmDiscard(S.otherTabsDirtyClose);
+      if (!ok) return false;
+    }
   }
   app.tabs = app.tabs.filter((t) => t.id === keepId);
   app.activeId = keepId;
@@ -182,20 +190,49 @@ export function updateSource(src: string): void {
   if (!tab) return;
   tab.docSource = src;
   tab.dirty = src !== tab.savedSource;
+  scheduleAutosave();
 }
 
-export async function saveCurrent(): Promise<boolean> {
-  const tab = activeTab();
-  if (!tab?.path || tab.docSource === null) return true;
+// —— 自动保存 ——
+// 编辑停顿后自动落盘，⌘S 退化为「立即保存」。防抖窗口内的切标签/关标签/关窗/
+// 换文件都会先 flush；只有落盘失败才回退到既有的丢弃确认（数据安全网）。
+const AUTOSAVE_DELAY = 800;
+let autosaveTimer: ReturnType<typeof setTimeout> | undefined;
+
+function scheduleAutosave(): void {
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(() => void flushAutosave(), AUTOSAVE_DELAY);
+}
+
+// 立即保存所有脏标签（正常至多一个：刚编辑过的那个），全部成功返回 true
+export async function flushAutosave(): Promise<boolean> {
+  clearTimeout(autosaveTimer);
+  let ok = true;
+  for (const t of app.tabs) {
+    if (t.dirty && !(await saveTab(t))) ok = false;
+  }
+  return ok;
+}
+
+async function saveTab(tab: Tab): Promise<boolean> {
+  if (!tab.path || tab.docSource === null) return true;
+  const src = tab.docSource; // 快照：写入期间的新击键不应被标记为已保存
   try {
-    tab.savedMtime = await writeTextFile(tab.path, tab.docSource);
-    tab.savedSource = tab.docSource;
-    tab.dirty = false;
+    tab.savedMtime = await writeTextFile(tab.path, src);
+    if (tab.docSource === src) {
+      tab.savedSource = src;
+      tab.dirty = false;
+    }
     return true;
   } catch (e) {
     tab.error = e instanceof Error ? e.message : String(e);
     return false;
   }
+}
+
+export async function saveCurrent(): Promise<boolean> {
+  const tab = activeTab();
+  return tab ? saveTab(tab) : true;
 }
 
 export function switchMode(): void {
