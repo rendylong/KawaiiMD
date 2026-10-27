@@ -1,4 +1,4 @@
-# 墨阅 MoYue
+# KawaiiMD
 
 本地 Markdown 阅读器（macOS，Tauri v2 + Svelte 5）。
 

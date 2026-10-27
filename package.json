@@ -1,7 +1,7 @@
 {
-  "name": "moyue",
+  "name": "kawaimd",
   "version": "0.1.0",
-  "description": "墨阅 — 本地 Markdown 阅读器",
+  "description": "KawaiiMD — 本地 Markdown 阅读器",
   "type": "module",
   "scripts": {
     "dev": "vite dev",
