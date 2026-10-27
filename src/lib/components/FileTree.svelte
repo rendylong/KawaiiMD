@@ -343,7 +343,7 @@
       ><Icon name="plus" size={13} /></button>
     {/if}
   </div>
-  {#if creatingPath === rootPath}{@render editingRow(-1)}{/if}
+  {#if rootPath && creatingPath === rootPath}{@render editingRow(-1)}{/if}
   {#each filterNodes(nodes, settings.showAllFiles) as node (node.path)}
     {@render row(node)}
   {/each}
