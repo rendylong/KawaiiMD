@@ -1,28 +1,23 @@
 // 图标几何表 + 墨水包围盒测量。
-// 根因记录：三轮手工改 path 未能统一视觉大小——因为没有测量反馈。
-// 本模块用实测 bbox 计算归一 transform（统一墨水高度、几何中心对齐 12,12），
-// icons.test.ts 钉住「归一后墨水框一致」，从此改图标必须过测量。
+// 两套并存（用户 2026-10-27 裁定）：
+// - 树内三图标（folder/fileText/image）：实测墨水盒归一化（统一墨水高 15、中心对齐），
+//   icons.test.ts 钉住「归一后墨水框一致」——五轮实测换来的方案，不要回退。
+// - 界面/工具栏图标：保持 Lucide 原始几何（不烘 transform），按 Lucide 家族原设计比例渲染，
+//   用户明确认为比归一化后更好看。fileText 双用：树内归一，工具栏传 raw。
 
 export type IconDef = { d: string; transform?: string };
 
 export const INK_TARGET_HEIGHT = 15;
 
 export const icons: Record<string, IconDef> = {
-  panelLeft: {
-    d: "M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5Zm6 0v14",
-    transform: "translate(2.86 2.86) scale(0.7614)",
-  },
-  listTree: {
-    d: "M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",
-    transform: "translate(-1.14 -1.14) scale(1.0949)",
-  },
+  panelLeft: { d: "M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5Zm6 0v14" },
+  listTree: { d: "M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" },
   fileText: {
     d: "M13 4H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-4-4Z M13 4v4h4 M9 12h6 M9 16h4",
     transform: "translate(1.83 1.83) scale(0.8475)",
   },
   folderOpen: {
     d: "M3 7V5a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v2M3 7h18l-2 10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L3 7Z",
-    transform: "translate(1.83 2.68) scale(0.8475)",
   },
   folder: {
     d: "M5 7a2 2 0 0 1 2-2h3.5l2 2H17a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7Z",
@@ -32,27 +27,14 @@ export const icons: Record<string, IconDef> = {
     d: "M5 6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6Z M6 15.5l3.5-3.5 3 3 1.5-1.5 4 4 M9.5 9.5a1 1 0 1 0-2 0 1 1 0 0 0 2 0Z",
     transform: "translate(1.83 1.83) scale(0.8475)",
   },
-  sun: {
-    d: "M12 4V2m0 20v-2m8-8h2M2 12h2m13.66-5.66 1.41-1.41M4.93 19.07l1.41-1.41m0-11.32L4.93 4.93m14.14 14.14-1.41-1.41M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z",
-    transform: "translate(3.71 3.71) scale(0.6912)",
-  },
-  moon: {
-    d: "M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z",
-    transform: "translate(2.83 2.86) scale(0.7631)",
-  },
-  pencilLine: {
-    d: "M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z",
-    transform: "translate(2.43 2.86) scale(0.7979)",
-  },
-  copy: {
-    d: "M8 8V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-3M5 8h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z",
-    transform: "translate(2.86 2.86) scale(0.7614)",
-  },
-  check: {
-    d: "m4 12 5 5L20 6",
-    transform: "translate(-2.17 -1.58) scale(1.1811)",
-  },
+  sun: { d: "M12 4V2m0 20v-2m8-8h2M2 12h2m13.66-5.66 1.41-1.41M4.93 19.07l1.41-1.41m0-11.32L4.93 4.93m14.14 14.14-1.41-1.41M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z" },
+  moon: { d: "M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" },
+  pencilLine: { d: "M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" },
 };
+
+// 树内使用、必须墨水归一的图标；其余为界面图标（保持原始几何）
+export const TREE_ICONS = ["folder", "fileText", "image"] as const;
+export const UI_ICONS = ["panelLeft", "listTree", "folderOpen", "sun", "moon", "pencilLine"] as const;
 
 export type Box = { x: number; y: number; w: number; h: number };
 

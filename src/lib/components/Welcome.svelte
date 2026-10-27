@@ -21,8 +21,8 @@
     <div class="w-logo">{S.appName}</div>
     <div class="w-sub">{S.welcome}</div>
     <div class="w-acts">
-      <button type="button" class="pri" onclick={onOpenFile}><Icon name="fileText" /><span>{S.openFile}</span></button>
-      <button type="button" onclick={onOpenFolder}><Icon name="folderOpen" /><span>{S.openFolder}</span></button>
+      <button type="button" class="pri" onclick={onOpenFile}><Icon name="fileText" raw strokeWidth={2} /><span>{S.openFile}</span></button>
+      <button type="button" onclick={onOpenFolder}><Icon name="folderOpen" raw strokeWidth={2} /><span>{S.openFolder}</span></button>
     </div>
     {#if settings.recents.length > 0}
       <div class="w-rec">

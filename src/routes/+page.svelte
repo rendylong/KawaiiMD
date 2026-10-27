@@ -98,18 +98,18 @@
         aria-pressed={settings.treeCollapsed}
         data-tip={S.toggleTree}
         onclick={() => setTreeCollapsed(!settings.treeCollapsed)}
-      ><Icon name="panelLeft" /></button>
+      ><Icon name="panelLeft" raw strokeWidth={2} /></button>
       <button
         type="button"
         aria-label={S.toggleToc}
         aria-pressed={settings.tocCollapsed}
         data-tip={S.toggleToc}
         onclick={() => setTocCollapsed(!settings.tocCollapsed)}
-      ><Icon name="listTree" /></button>
-      <button type="button" aria-label={S.openFileHint} data-tip={S.openFileHint} onclick={onOpenFile}><Icon name="fileText" /></button>
-      <button type="button" aria-label={S.openFolderHint} data-tip={S.openFolderHint} onclick={onOpenFolder}><Icon name="folderOpen" /></button>
+      ><Icon name="listTree" raw strokeWidth={2} /></button>
+      <button type="button" aria-label={S.openFileHint} data-tip={S.openFileHint} onclick={onOpenFile}><Icon name="fileText" raw strokeWidth={2} /></button>
+      <button type="button" aria-label={S.openFolderHint} data-tip={S.openFolderHint} onclick={onOpenFolder}><Icon name="folderOpen" raw strokeWidth={2} /></button>
       <button type="button" aria-label={S.themeHint} data-tip={S.themeHint} onclick={toggleTheme}>
-        <Icon name={resolvedTheme() === "dark" ? "sun" : "moon"} />
+        <Icon name={resolvedTheme() === "dark" ? "sun" : "moon"} raw strokeWidth={2} />
       </button>
       <button
         type="button"
@@ -118,7 +118,7 @@
         data-tip={app.mode === "edit" ? S.toRead : S.toEdit}
         onclick={switchMode}
       >
-        <Icon name="pencilLine" />
+        <Icon name="pencilLine" raw strokeWidth={2} />
         <span>{app.mode === "edit" ? S.readMode : S.editMode}</span>
         {#if app.dirty}<span class="dirty-dot" aria-label="未保存"></span>{/if}
       </button>
