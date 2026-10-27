@@ -21,7 +21,8 @@
   const cmTheme = EditorView.theme({
     "&": { height: "100%", fontSize: "13.5px", backgroundColor: "var(--bg-side)", color: "var(--fg)" },
     ".cm-scroller": { fontFamily: "var(--font-mono)", lineHeight: "1.75" },
-    ".cm-content": { padding: "20px 0 60vh" },
+    // 尾部余量默认按短文档给小值，fitTailPadding 对超视口的长文档升到 60vh
+    ".cm-content": { padding: "20px 0 24px" },
     ".cm-gutters": { display: "none" },
     "&.cm-focused": { outline: "none" },
   });
@@ -71,6 +72,29 @@
     void app.currentPath;
     void app.docVersion;
     const src = untrack(() => app.docSource ?? "");
+
+    // 分栏滚动同步需要「内容超过视口的文档」尾部留 60vh 过滚余量（最后一行才滚得到视口顶）；
+    // 短文档（如刚新建的一行标题）留 60vh 只会变成大片空白和多出的滚动条。
+    // 按内容自然高度是否超过编辑器视口动态决定尾 padding；内容或容器尺寸变化时重算。
+    let fitQueued = false;
+    function fitTailPadding(): void {
+      fitQueued = false;
+      const scroller = editor.dom.querySelector<HTMLElement>(".cm-scroller");
+      const content = editor.dom.querySelector<HTMLElement>(".cm-content");
+      if (!scroller || !content) return;
+      const prev = content.style.paddingBottom;
+      content.style.paddingBottom = "0px";
+      const natural = scroller.scrollHeight; // 排除尾 padding 的内容自然高度
+      content.style.paddingBottom = prev;
+      const pad = natural > scroller.clientHeight ? "60vh" : "24px";
+      if (prev !== pad) content.style.paddingBottom = pad;
+    }
+    function queueFit(): void {
+      if (fitQueued) return;
+      fitQueued = true;
+      requestAnimationFrame(fitTailPadding);
+    }
+
     const editor = new EditorView({
       state: EditorState.create({
         doc: src,
@@ -90,6 +114,7 @@
             if (!u.docChanged) return;
             updateSource(u.state.doc.toString());
             schedulePreview();
+            queueFit();
           }),
         ],
       }),
@@ -97,6 +122,9 @@
     });
     view = editor;
     editor.focus();
+    queueFit();
+    const ro = new ResizeObserver(() => queueFit());
+    ro.observe(editor.dom);
     untrack(() => void refreshPreview());
     const onEditorScroll = () => syncPreviewToEditor(editor);
     const onPreviewScroll = () => syncEditorToPreview(editor);
@@ -104,6 +132,7 @@
     previewHost.addEventListener("scroll", onPreviewScroll, { passive: true });
     return () => {
       clearTimeout(previewTimer);
+      ro.disconnect();
       editor.dom.removeEventListener("scroll", onEditorScroll);
       previewHost.removeEventListener("scroll", onPreviewScroll);
       editor.destroy();
