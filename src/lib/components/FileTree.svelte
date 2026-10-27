@@ -1,8 +1,9 @@
 <script lang="ts">
   import { app, openFile } from "../state/app.svelte";
   import { convertFileSrc, dirname, listDir, revealInFinder } from "../fs/tauri";
-  import { classifyEntry, sortEntries } from "../fs/entries";
+  import { classifyEntry, filterNodes, sortEntries } from "../fs/entries";
   import { nextStickyRoot } from "../fs/tree-root";
+  import { settings } from "../settings.svelte";
   import Icon from "./Icon.svelte";
 
   type Node = {
@@ -134,7 +135,7 @@
     {/if}
   </button>
   {#if node.open && node.children.length > 0}
-    {#each node.children as child (child.path)}
+    {#each filterNodes(node.children, settings.showAllFiles) as child (child.path)}
       {@render row(child)}
     {/each}
   {/if}
@@ -142,7 +143,7 @@
 
 <div class="file-tree" role="tree" tabindex="0" bind:this={container} onkeydown={onKeydown} aria-label="文件树">
   <div class="t-head">{rootPath?.split("/").pop() ?? ""}</div>
-  {#each nodes as node (node.path)}
+  {#each filterNodes(nodes, settings.showAllFiles) as node (node.path)}
     {@render row(node)}
   {/each}
 </div>

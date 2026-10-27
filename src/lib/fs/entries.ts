@@ -23,3 +23,11 @@ export function sortEntries(entries: DirEntry[]): DirEntry[] {
     return a.name.localeCompare(b.name, "zh");
   });
 }
+
+// 仅 md 模式下的树视图过滤（纯函数、不变异节点）。
+// 只过滤文件、目录一律保留：树是懒加载的，未展开目录无法廉价判断子树是否含 md，
+// 误藏目录会让里面的 md 永远打不开——宁可多显示空目录，不丢可达内容。
+export function filterNodes<T extends { name: string; isDir: boolean }>(nodes: T[], showAll: boolean): T[] {
+  if (showAll) return nodes;
+  return nodes.filter((n) => n.isDir || classifyEntry(n.name, false) === "markdown");
+}

@@ -12,6 +12,9 @@
   import TocPanel from "$lib/components/TocPanel.svelte";
   import EditorView from "$lib/components/EditorView.svelte";
   import Lightbox from "$lib/components/Lightbox.svelte";
+  import SettingsPanel from "$lib/components/SettingsPanel.svelte";
+
+  let settingsOpen = $state(false);
 
   function toggleTheme(): void {
     // 直接按当前生效主题翻转：旧的 system→light→dark 三态循环在 system=light 时
@@ -35,6 +38,10 @@
   }
 
   function onKeydown(e: KeyboardEvent): void {
+    if (e.key === "Escape" && settingsOpen) {
+      settingsOpen = false;
+      return;
+    }
     if (!(e.metaKey || e.ctrlKey)) return;
     const k = e.key.toLowerCase();
     if (k === "t") {
@@ -70,14 +77,22 @@
       });
     })();
   });
+
+  // 点击弹层与齿轮之外的任意处关闭设置（齿轮自身 onclick 会切换开合，跳过）
+  function onWindowMousedown(e: MouseEvent): void {
+    if (!settingsOpen) return;
+    const t = e.target as HTMLElement;
+    if (t.closest(".settings-pop, .tb-actions .gear")) return;
+    settingsOpen = false;
+  }
 </script>
 
-<svelte:window onkeydown={onKeydown} />
+<svelte:window onkeydown={onKeydown} onmousedown={onWindowMousedown} />
 
 <div class="app">
-  <header class="tb">
-    <div class="logo">
-      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+  <header class="tb" data-tauri-drag-region>
+    <div class="logo" aria-hidden="true">
+      <svg width="16" height="16" viewBox="0 0 16 16">
         <path
           d="M8 1.5C5.5 5 3.5 7.2 3.5 9.8a4.5 4.5 0 0 0 9 0C12.5 7.2 10.5 5 8 1.5Z"
           fill="var(--accent)"
@@ -85,12 +100,14 @@
       </svg>
       <span>{S.appName}</span>
     </div>
-    <button
-      type="button"
-      class="tb-file"
-      title={S.revealInFinder}
-      onclick={() => app.currentPath && void revealInFinder(app.currentPath).catch(() => {})}
-    >{basename(app.currentPath)}</button>
+    <div class="tb-title" data-tauri-drag-region>
+      <button
+        type="button"
+        class="tb-file"
+        title={S.revealInFinder}
+        onclick={() => app.currentPath && void revealInFinder(app.currentPath).catch(() => {})}
+      >{basename(app.currentPath)}</button>
+    </div>
     <div class="tb-actions">
       <button
         type="button"
@@ -122,7 +139,19 @@
         <span>{app.mode === "edit" ? S.readMode : S.editMode}</span>
         {#if app.dirty}<span class="dirty-dot" aria-label="未保存"></span>{/if}
       </button>
+      <button
+        type="button"
+        class="gear"
+        aria-label={S.settings}
+        aria-expanded={settingsOpen}
+        aria-haspopup="dialog"
+        data-tip={S.settings}
+        onclick={() => (settingsOpen = !settingsOpen)}
+      ><Icon name="settings2" raw strokeWidth={2} /></button>
     </div>
+    {#if settingsOpen}
+      <SettingsPanel />
+    {/if}
   </header>
   {#if app.error && app.mode === "edit"}
     <div class="save-banner" role="alert">{S.saveFailedBanner}：{app.error}</div>

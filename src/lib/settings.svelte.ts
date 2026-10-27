@@ -7,6 +7,7 @@ const KEY_TREE_COLLAPSED = "moyue.tree-collapsed";
 const KEY_TOC_COLLAPSED = "moyue.toc-collapsed";
 const KEY_SPLIT = "moyue.split";
 const KEY_SESSION = "moyue.session";
+const KEY_SHOW_ALL = "moyue.show-all-files";
 
 export type Session = { file: string | null; folder: string | null };
 
@@ -34,6 +35,7 @@ export const settings = $state({
   tocCollapsed: load<boolean>(KEY_TOC_COLLAPSED, false),
   split: load<number>(KEY_SPLIT, 50),
   session: load<Session>(KEY_SESSION, { file: null, folder: null }),
+  showAllFiles: load<boolean>(KEY_SHOW_ALL, false),
 });
 
 export function setSession(patch: Partial<Session>): void {
@@ -54,6 +56,11 @@ export function setTreeCollapsed(v: boolean): void {
 export function setTocCollapsed(v: boolean): void {
   settings.tocCollapsed = v;
   persist(KEY_TOC_COLLAPSED, v);
+}
+
+export function setShowAllFiles(v: boolean): void {
+  settings.showAllFiles = v;
+  persist(KEY_SHOW_ALL, v);
 }
 
 export function setThemeMode(mode: ThemeMode): void {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyEntry, sortEntries } from "./entries";
+import { classifyEntry, filterNodes, sortEntries } from "./entries";
 import type { DirEntry } from "../types";
 
 describe("classifyEntry", () => {
@@ -31,5 +31,29 @@ describe("sortEntries", () => {
     ];
     const sorted = sortEntries(entries).map((e) => e.name);
     expect(sorted).toEqual(["a", "b", "苹果.md", "香蕉.md", "pic.png", "z-other.txt"]);
+  });
+});
+
+describe("filterNodes", () => {
+  const nodes = [
+    { name: "docs", isDir: true },
+    { name: "README.md", isDir: false },
+    { name: "logo.png", isDir: false },
+    { name: "数据.csv", isDir: false },
+    { name: "AGENTS.md", isDir: false },
+  ];
+
+  it("仅 md 模式：保留目录与 markdown，滤掉其余文件", () => {
+    const names = filterNodes(nodes, false).map((n) => n.name);
+    expect(names).toEqual(["docs", "README.md", "AGENTS.md"]);
+  });
+
+  it("全部模式：原样返回（同一引用，不变异）", () => {
+    expect(filterNodes(nodes, true)).toBe(nodes);
+  });
+
+  it("空数组与边界", () => {
+    expect(filterNodes([], false)).toEqual([]);
+    expect(filterNodes([{ name: "x.pdf", isDir: false }], false)).toEqual([]);
   });
 });

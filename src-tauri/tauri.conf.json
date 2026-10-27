@@ -13,6 +13,7 @@
     "windows": [
       {
         "title": "墨阅",
+        "titleBarStyle": "Overlay",
         "width": 1100,
         "height": 750,
         "minWidth": 720,

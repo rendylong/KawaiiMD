@@ -39,11 +39,13 @@ button {
 }
 
 .tb {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
   height: 44px;
-  padding: 0 12px;
+  /* 原生标题栏改 overlay 后红绿灯悬浮在本栏左端，预留其位置 */
+  padding: 0 12px 0 78px;
   background: var(--bg-side);
   border-bottom: 1px solid var(--line);
   flex: none;
@@ -56,11 +58,22 @@ button {
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.02em;
+  /* 非交互，穿透给 data-tauri-drag-region 拖拽 */
+  pointer-events: none;
+}
+
+/* 中部标题区：可拖拽，文件名按钮按内容收缩居中 */
+.tb-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
 }
 
 .tb-file {
-  flex: 1;
+  flex: none;
   min-width: 0;
+  max-width: 100%;
   text-align: center;
   font-size: 12.5px;
   color: var(--fg-2);
@@ -146,6 +159,132 @@ button {
   left: auto;
   right: 0;
   transform: none;
+}
+
+/* 齿轮展开态 */
+.tb-actions button.gear[aria-expanded="true"] {
+  background: var(--accent-weak);
+  color: var(--fg);
+}
+
+/* —— 设置弹层 —— */
+.settings-pop {
+  position: absolute;
+  top: calc(100% + 7px);
+  right: 10px;
+  width: 252px;
+  padding: 4px 0 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.18);
+  z-index: 40;
+}
+
+.settings-pop .sp-h {
+  font-size: 11px;
+  color: var(--fg-3);
+  letter-spacing: 0.06em;
+  padding: 9px 15px 7px;
+}
+
+.settings-pop .sp-sec {
+  padding: 7px 15px;
+}
+
+.settings-pop .sp-sec + .sp-sec {
+  border-top: 1px solid var(--line);
+}
+
+.settings-pop .sp-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.settings-pop .sp-l {
+  font-size: 12.5px;
+  color: var(--fg);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.settings-pop .sp-sub {
+  font-size: 11px;
+  color: var(--fg-3);
+  font-weight: 400;
+}
+
+.settings-pop .sp-switch {
+  position: relative;
+  width: 32px;
+  height: 19px;
+  flex: none;
+}
+
+.settings-pop .sp-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.settings-pop .sp-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: var(--line);
+  transition: background 0.15s ease;
+}
+
+.settings-pop .sp-knob {
+  position: absolute;
+  top: 2.5px;
+  left: 2.5px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease;
+}
+
+.settings-pop .sp-input:checked + .sp-track {
+  background: var(--accent);
+}
+
+.settings-pop .sp-input:checked + .sp-track .sp-knob {
+  transform: translateX(13px);
+}
+
+.settings-pop .sp-seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  margin-top: 7px;
+  border-radius: 7px;
+  background: var(--bg-side);
+  border: 1px solid var(--line);
+}
+
+.settings-pop .sp-seg-btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 5px;
+  color: var(--fg-2);
+}
+
+.settings-pop .sp-seg-btn.active {
+  background: var(--accent-weak);
+  color: var(--accent);
+  font-weight: 500;
 }
 
 .main {
