@@ -62,34 +62,150 @@ button {
   pointer-events: none;
 }
 
-/* 中部标题区：可拖拽，文件名按钮按内容收缩居中 */
-.tb-title {
+/* 中部标签区：内嵌于标题栏的标签药丸（多标签）。空白处可拖拽/双击新建 */
+.tb-tabs {
   flex: 1;
   min-width: 0;
   display: flex;
-  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  padding: 0 2px;
 }
 
-.tb-file {
-  flex: none;
-  min-width: 0;
-  max-width: 100%;
-  text-align: center;
+.tb-tabs .tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  flex: 0 1 auto;
+  min-width: 56px;
+  max-width: 190px;
+  padding: 0 6px 0 10px;
+  border: none;
+  background: none;
+  border-radius: 7px;
   font-size: 12.5px;
   color: var(--fg-2);
-  background: none;
-  border: none;
-  padding: 4px 10px;
-  border-radius: 6px;
+  cursor: pointer;
+}
+
+.tb-tabs .tab svg {
+  /* 长标题挤压时 flex 不收缩图标（树图标同款教训） */
+  flex: none;
+}
+
+.tb-tabs .tab:hover {
+  background: var(--accent-weak);
+  color: var(--fg);
+}
+
+.tb-tabs .tab.active {
+  background: var(--accent-weak);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.tb-tabs .tab.empty .tab-name {
+  color: var(--fg-3);
+}
+
+.tb-tabs .tab.empty.active .tab-name {
+  color: var(--accent);
+}
+
+.tb-tabs .tab-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  cursor: default;
 }
 
-.tb-file:hover {
+/* 脏（未保存）墨点；外部修改冲突用警示色。悬停让位给关闭 × */
+.tb-tabs .tab-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex: none;
+}
+
+.tb-tabs .tab-dot.warn {
+  background: var(--danger);
+}
+
+.tb-tabs .tab:hover .tab-dot {
+  display: none;
+}
+
+.tb-tabs .tab-x {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  color: var(--fg-3);
+  flex: none;
+  opacity: 0;
+}
+
+.tb-tabs .tab:hover .tab-x,
+.tb-tabs .tab-x:focus-visible {
+  opacity: 1;
+}
+
+.tb-tabs .tab-x:hover {
+  background: var(--sel);
+  color: var(--accent);
+}
+
+.tb-tabs .tab-new {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  color: var(--fg-3);
+  cursor: pointer;
+}
+
+.tb-tabs .tab-new:hover {
   background: var(--accent-weak);
+  color: var(--accent);
+}
+
+/* —— 标签右键菜单 —— */
+.ctx-pop {
+  position: fixed;
+  z-index: 60;
+  min-width: 150px;
+  padding: 4px 0;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.18);
+}
+
+.ctx-pop button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  padding: 6px 14px;
+  font-size: 12.5px;
   color: var(--fg);
+  cursor: pointer;
+}
+
+.ctx-pop button:hover {
+  background: var(--accent-weak);
+  color: var(--accent);
 }
 
 .tb-actions {
@@ -312,13 +428,34 @@ button {
 }
 
 .side.tree {
-  width: 240px;
-  border-right: 1px solid var(--line);
+  /* 宽度由拖拽把手持久化控制（内联 style），默认 240 */
 }
 
 .side.toc {
-  width: 220px;
-  border-left: 1px solid var(--line);
+  /* 宽度由拖拽把手持久化控制（内联 style），默认 220 */
+}
+
+/* —— 侧栏拖宽把手（视觉与 .ed-divider 同语言：负 margin 叠出 1px 线，hover/拖动墨青） —— */
+.side-resizer {
+  width: 5px;
+  cursor: col-resize;
+  position: relative;
+  flex: none;
+  margin: 0 -2px;
+  z-index: 2;
+}
+
+.side-resizer::after {
+  content: "";
+  position: absolute;
+  inset: 0 2px;
+  background: var(--line);
+  border-radius: 3px;
+}
+
+.side-resizer:hover::after,
+.side-resizer.drag::after {
+  background: var(--accent);
 }
 
 .reader {
@@ -363,13 +500,15 @@ button {
 }
 
 @media (max-width: 820px) {
-  .side.toc {
+  .side.toc,
+  .res-toc {
     display: none;
   }
 }
 
 @media (max-width: 640px) {
-  .side.tree {
+  .side.tree,
+  .res-tree {
     display: none;
   }
 }
@@ -650,7 +789,9 @@ button {
 
 /* —— 编辑视图（决策 7.1/8.1） —— */
 .edit-split {
-  flex: 1;
+  /* 占满 .reader 视口高：编辑/预览两栏各自内滚，.reader 只在阅读模式滚。
+     不能依赖内容撑高——短文档（如新建的一行标题）会塌成一截、下方露白 */
+  height: 100%;
   display: flex;
   min-height: 0;
 }
@@ -989,8 +1130,15 @@ button {
   width: 12px;
   justify-content: center;
   color: var(--fg-3);
-  font-size: 10px;
   flex: none;
+}
+
+.file-tree .t-item .tw svg {
+  transition: transform 0.15s ease;
+}
+
+.file-tree .t-item.open .tw svg {
+  transform: rotate(90deg);
 }
 
 /* 根因（第五轮实测）：svg 是 .t-item flex 行的无保护子项，长文件名溢出时

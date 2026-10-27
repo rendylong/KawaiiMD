@@ -81,7 +81,7 @@ export async function openExternalUrl(url: string): Promise<void> {
 
 export async function confirmDiscard(message: string): Promise<boolean> {
   const { ask } = await import("@tauri-apps/plugin-dialog");
-  return ask(message, { title: "墨阅", kind: "warning" });
+  return ask(message, { title: "KawaiiMD", kind: "warning" });
 }
 
 export { convertFileSrc };

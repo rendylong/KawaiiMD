@@ -33,11 +33,13 @@ export const icons: Record<string, IconDef> = {
   settings2: { d: "M20 7h-9M14 17H5 M10 7a3 3 0 1 0-6 0 3 3 0 0 0 6 0Z M20 17a3 3 0 1 0-6 0 3 3 0 0 0 6 0Z" },
   filePlus: { d: "M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z M14 2v4a2 2 0 0 0 2 2h4 M9 15h6 M12 12v6" },
   plus: { d: "M12 5v14 M5 12h14" },
+  chevronRight: { d: "m9 18 6-6-6-6" },
+  x: { d: "M18 6 6 18 M6 6l12 12" },
 };
 
 // 树内使用、必须墨水归一的图标；其余为界面图标（保持原始几何）
 export const TREE_ICONS = ["folder", "fileText", "image"] as const;
-export const UI_ICONS = ["panelLeft", "listTree", "folderOpen", "sun", "moon", "pencilLine", "settings2", "filePlus", "plus"] as const;
+export const UI_ICONS = ["panelLeft", "listTree", "folderOpen", "sun", "moon", "pencilLine", "settings2", "filePlus", "plus", "chevronRight", "x"] as const;
 
 export type Box = { x: number; y: number; w: number; h: number };
 

@@ -1,5 +1,5 @@
 export const S = {
-  appName: "墨阅",
+  appName: "KawaiiMD",
   openFile: "打开文件",
   openFolder: "打开文件夹",
   openFileHint: "打开文件 ⌘O",
@@ -13,7 +13,8 @@ export const S = {
   nameInvalid: "名称不能包含 / 或 :",
   nameExists: "已存在",
   toggleTheme: "切换主题",
-  themeHint: "切换主题 ⌘T",
+  // ⌘T 让位给「新建标签」（macOS 惯例），主题切换移至 ⇧⌘T
+  themeHint: "切换主题 ⇧⌘T",
   toggleTree: "折叠/展开文件树",
   toggleToc: "折叠/展开目录",
   toEdit: "切换到编辑 ⌘E",
@@ -41,6 +42,16 @@ export const S = {
   conflictKeep: "保留我的修改",
   dirtyClose: "有未保存的修改，确定关闭？",
   dirtySwitch: "有未保存的修改，切换将丢弃",
+  tabsLabel: "文档标签",
+  newTab: "新建标签",
+  newTabHint: "新建标签 ⌘T",
+  newTabTitle: "新标签",
+  closeTab: "关闭标签",
+  closeTabHint: "关闭标签 ⌘W",
+  closeOtherTabs: "关闭其他标签",
+  copyPath: "复制路径",
+  tabDirtyClose: "此标签有未保存的修改，关闭将丢弃，确定？",
+  otherTabsDirtyClose: "其他标签中有未保存的修改，关闭将丢弃，确定？",
   saveFailedBanner: "保存失败",
   emptyReader: "尚未打开文件",
 } as const;

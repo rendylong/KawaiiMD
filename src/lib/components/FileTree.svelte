@@ -1,6 +1,6 @@
 <script lang="ts">
   import { tick } from "svelte";
-  import { app, createFileAt, openFile } from "../state/app.svelte";
+  import { app, createFileAt, currentPath, openFile } from "../state/app.svelte";
   import { convertFileSrc, dirname, listDir, revealInFinder } from "../fs/tauri";
   import { classifyEntry, filterNodes, sortEntries } from "../fs/entries";
   import { finalizeName, nextUntitled, validateName, type NameIssue } from "../fs/new-file";
@@ -31,10 +31,14 @@
 
   // 工作区优先；否则树根粘住首个挂载目录，仅当新文件在树外时迁移，
   // 避免点子目录文件后整棵树搬进子目录、上级不可返回。
-  const rootPath = $derived(app.workspaceRoot ?? stickyRoot ?? (app.currentPath ? dirname(app.currentPath) : null));
+  const rootPath = $derived.by(() => {
+    const cp = currentPath();
+    return app.workspaceRoot ?? stickyRoot ?? (cp ? dirname(cp) : null);
+  });
 
   $effect(() => {
-    const candidate = app.currentPath ? dirname(app.currentPath) : null;
+    const cp = currentPath();
+    const candidate = cp ? dirname(cp) : null;
     stickyRoot = nextStickyRoot(stickyRoot, candidate);
   });
 
@@ -236,11 +240,21 @@
     return "fileText";
   }
 
-  function onNodeClick(node: Node): void {
+  function onNodeClick(node: Node, e: MouseEvent): void {
     if (node.isDir) void toggle(node);
-    else if (classifyEntry(node.name, false) === "markdown") void openFile(node.path);
+    // ⌘/Ctrl 点击 markdown：新标签打开（原型确认的交互）
+    else if (classifyEntry(node.name, false) === "markdown")
+      void openFile(node.path, { newTab: e.metaKey || e.ctrlKey });
     else if (classifyEntry(node.name, false) === "image") app.lightboxSrc = convertFileSrc(node.path);
     else void revealInFinder(node.path).catch(() => {});
+  }
+
+  function onNodeAuxclick(e: MouseEvent, node: Node): void {
+    if (e.button !== 1) return;
+    if (!node.isDir && classifyEntry(node.name, false) === "markdown") {
+      e.preventDefault();
+      void openFile(node.path, { newTab: true });
+    }
   }
 
   function visibleNodes(list: Node[], out: Node[] = []): Node[] {
@@ -296,13 +310,14 @@
       type="button"
       data-node
       class="t-item"
-      class:active={app.currentPath === node.path}
+      class:active={currentPath() === node.path}
       class:open={node.open}
       style="padding-left: {8 + node.depth * 14}px"
-      onclick={() => onNodeClick(node)}
+      onclick={(e) => onNodeClick(node, e)}
+      onauxclick={(e) => onNodeAuxclick(e, node)}
     >
       {#if node.isDir}
-        <span class="tw" aria-hidden="true">{node.open ? "▾" : "▸"}</span>
+        <span class="tw" aria-hidden="true"><Icon name="chevronRight" /></span>
       {:else}
         <span class="tw" aria-hidden="true"></span>
       {/if}

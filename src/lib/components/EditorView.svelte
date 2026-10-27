@@ -4,7 +4,7 @@
   import { EditorView, keymap } from "@codemirror/view";
   import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
   import { markdown } from "@codemirror/lang-markdown";
-  import { app, saveCurrent, updateSource } from "../state/app.svelte";
+  import { activeTab, saveCurrent, updateSource } from "../state/app.svelte";
   import { dirname } from "../fs/tauri";
   import { mountDoc } from "../markdown/pipeline";
   import { resolvedTheme, setSplit, settings } from "../settings.svelte";
@@ -13,6 +13,7 @@
 
   let editorHost: HTMLElement;
   let previewHost: HTMLElement;
+  let previewWrap: HTMLElement;
   let divider: HTMLElement;
   let previewTimer: ReturnType<typeof setTimeout> | undefined;
   let previewDoc: Doc | null = null;
@@ -28,8 +29,9 @@
   });
 
   async function refreshPreview(): Promise<void> {
-    if (!previewHost || !app.currentPath || app.docSource === null) return;
-    previewDoc = await mountDoc(previewHost, app.docSource, dirname(app.currentPath), resolvedTheme());
+    const tab = activeTab();
+    if (!previewHost || !tab?.path || tab.docSource === null) return;
+    previewDoc = await mountDoc(previewHost, tab.docSource, dirname(tab.path), resolvedTheme());
   }
 
   function schedulePreview(): void {
@@ -39,7 +41,8 @@
 
   function syncPreviewToEditor(view: EditorView): void {
     if (!previewHost || !previewDoc) return;
-    const topLine = view.state.doc.lineAt(view.lineBlockAtHeight(view.dom.scrollTop).from).number - 1;
+    // 编辑器滚的是 scrollDOM（.cm-scroller），cm-editor 本体不滚
+    const topLine = view.state.doc.lineAt(view.lineBlockAtHeight(view.scrollDOM.scrollTop).from).number - 1;
     const heading = headingAtLine(previewDoc.headingLines, topLine);
     if (!heading) return;
     const el = previewHost.querySelector(`[id="${heading.id}"]`);
@@ -49,13 +52,13 @@
   }
 
   function syncEditorToPreview(view: EditorView): void {
-    if (!previewHost || !previewDoc) return;
+    if (!previewHost || !previewWrap || !previewDoc) return;
     if (Date.now() < programmaticScrollUntil) return;
     let curId: string | null = null;
     for (const t of previewDoc.toc) {
       const el = previewHost.querySelector<HTMLElement>(`[id="${t.id}"]`);
       const h = previewDoc.headingLines.find((x) => x.id === t.id);
-      if (el && h && el.offsetTop <= previewHost.scrollTop + 90) curId = t.id;
+      if (el && h && el.offsetTop <= previewWrap.scrollTop + 90) curId = t.id;
     }
     const line = curId ? previewDoc.headingLines.find((h) => h.id === curId) : null;
     if (!line) return;
@@ -67,11 +70,12 @@
   let view = $state<EditorView | null>(null);
 
   $effect(() => {
-    // 仅依赖文件身份与版本：切换文件/外部重载才重建编辑器；
+    // 仅依赖标签身份与该标签的内容版本：切标签/外部重载才重建编辑器；
     // 击键只写 docSource，不触发本 effect（否则编辑器销毁重建、焦点丢失）。
-    void app.currentPath;
-    void app.docVersion;
-    const src = untrack(() => app.docSource ?? "");
+    const tab = activeTab();
+    void tab?.id;
+    void tab?.docVersion;
+    const src = untrack(() => tab?.docSource ?? "");
 
     // 分栏滚动同步需要「内容超过视口的文档」尾部留 60vh 过滚余量（最后一行才滚得到视口顶）；
     // 短文档（如刚新建的一行标题）留 60vh 只会变成大片空白和多出的滚动条。
@@ -122,19 +126,26 @@
     });
     view = editor;
     editor.focus();
+    // 切回标签时恢复上次的编辑器滚动位置
+    const sc = editor.dom.querySelector<HTMLElement>(".cm-scroller");
+    if (sc && tab && tab.editScrollTop > 0) sc.scrollTop = tab.editScrollTop;
     queueFit();
     const ro = new ResizeObserver(() => queueFit());
     ro.observe(editor.dom);
     untrack(() => void refreshPreview());
     const onEditorScroll = () => syncPreviewToEditor(editor);
     const onPreviewScroll = () => syncEditorToPreview(editor);
-    editor.dom.addEventListener("scroll", onEditorScroll, { passive: true });
-    previewHost.addEventListener("scroll", onPreviewScroll, { passive: true });
+    // scroll 事件不冒泡：必须挂在真正的滚动元素上（.cm-scroller / .ed-prev-wrap）
+    editor.scrollDOM.addEventListener("scroll", onEditorScroll, { passive: true });
+    previewWrap.addEventListener("scroll", onPreviewScroll, { passive: true });
     return () => {
       clearTimeout(previewTimer);
       ro.disconnect();
-      editor.dom.removeEventListener("scroll", onEditorScroll);
-      previewHost.removeEventListener("scroll", onPreviewScroll);
+      editor.scrollDOM.removeEventListener("scroll", onEditorScroll);
+      previewWrap.removeEventListener("scroll", onPreviewScroll);
+      // 销毁前把编辑滚动记回所属标签（切标签/重载后可恢复）
+      const sc = editor.dom.querySelector<HTMLElement>(".cm-scroller");
+      if (tab && sc) tab.editScrollTop = sc.scrollTop;
       editor.destroy();
       view = null;
     };
@@ -170,7 +181,7 @@
     }}
     ondblclick={() => setSplit(50)}
   ></div>
-  <div class="ed-prev-wrap">
+  <div class="ed-prev-wrap" bind:this={previewWrap}>
     <div class="ed-prev doc" bind:this={previewHost}></div>
   </div>
 </div>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { app } from "../state/app.svelte";
+  import { activeTab } from "../state/app.svelte";
   import { activeFromOffsets } from "../dom/scroll";
 
   let panel: HTMLElement | undefined = $state();
@@ -13,8 +13,9 @@
   function onReaderScroll(): void {
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(() => {
-      if (!readerEl || !app.doc) return;
-      const offsets = app.doc.toc.map((t) => {
+      const doc = activeTab()?.doc;
+      if (!readerEl || !doc) return;
+      const offsets = doc.toc.map((t) => {
         const el = readerEl?.querySelector<HTMLElement>(`[id="${t.id}"]`);
         return el ? el.offsetTop : 0;
       });
@@ -38,7 +39,7 @@
 
 <div class="toc-panel" bind:this={panel}>
   <div class="c-h">本页目录</div>
-  {#each app.doc?.toc ?? [] as t (t.id)}
+  {#each activeTab()?.doc?.toc ?? [] as t (t.id)}
     <a
       href="#{t.id}"
       data-toc

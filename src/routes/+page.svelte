@@ -1,8 +1,35 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import type { Window as TauriWindow } from "@tauri-apps/api/window";
   import { S } from "$lib/ui-strings";
-  import { resolvedTheme, setThemeMode, setTocCollapsed, setTreeCollapsed, settings } from "$lib/settings.svelte";
-  import { app, openFile, openFolder, restoreSession, saveCurrent, switchMode, wireFsChange } from "$lib/state/app.svelte";
+  import {
+    TOC_WIDTH_DEFAULT,
+    TREE_WIDTH_DEFAULT,
+    resolvedTheme,
+    setThemeMode,
+    setTocCollapsed,
+    setTocWidth,
+    setTreeCollapsed,
+    setTreeWidth,
+    settings,
+  } from "$lib/settings.svelte";
+  import {
+    activeTab,
+    activateTab,
+    anyTabDirty,
+    app,
+    closeOtherTabs,
+    closeTab,
+    currentPath,
+    newTab,
+    openFile,
+    openFolder,
+    restoreSession,
+    saveCurrent,
+    switchMode,
+    wireFsChange,
+  } from "$lib/state/app.svelte";
+  import { cycleTabId, nthTabId, tabTitle } from "$lib/state/tabs";
   import { confirmDiscard, dirname, pickFile, pickFolder, revealInFinder } from "$lib/fs/tauri";
   import { overlayScrollbar } from "$lib/dom/overlay-scrollbar";
   import Icon from "$lib/components/Icon.svelte";
@@ -15,6 +42,13 @@
   import SettingsPanel from "$lib/components/SettingsPanel.svelte";
 
   let settingsOpen = $state(false);
+  // 标签右键菜单（clientX/Y 已夹取，防止贴边溢出）
+  let ctx = $state<{ x: number; y: number; tabId: number } | null>(null);
+  let readerEl: HTMLElement | undefined = $state();
+  let win: TauriWindow | null = null;
+
+  const tab = $derived(activeTab());
+  const ctxTab = $derived(app.tabs.find((t) => t.id === ctx?.tabId) ?? null);
 
   function toggleTheme(): void {
     // 直接按当前生效主题翻转：旧的 system→light→dark 三态循环在 system=light 时
@@ -22,9 +56,10 @@
     setThemeMode(resolvedTheme() === "dark" ? "light" : "dark");
   }
 
+  // ⌘O 是外部入口：新标签打开，不打断当前阅读
   async function onOpenFile(): Promise<void> {
     const p = await pickFile();
-    if (p) await openFile(p);
+    if (p) await openFile(p, { newTab: true });
   }
 
   async function onOpenFolder(): Promise<void> {
@@ -34,7 +69,8 @@
 
   // 「当前目录」：当前文件所在目录；无文件时用工作区根。皆无则入口禁用。
   function newFileTargetDir(): string | null {
-    return app.currentPath ? dirname(app.currentPath) : app.workspaceRoot;
+    const cp = currentPath();
+    return cp ? dirname(cp) : app.workspaceRoot;
   }
 
   function onNewFile(): void {
@@ -45,34 +81,126 @@
     app.creating = dir;
   }
 
-  function basename(path: string | null): string {
-    if (!path) return "";
-    return path.split("/").pop() ?? "";
+  // —— 标签栏 ——
+
+  function onTabClick(e: MouseEvent, id: number): void {
+    const x = e.target instanceof Element ? e.target.closest(".tab-x") : null;
+    if (x) {
+      void closeTab(id);
+      return;
+    }
+    activateTab(id);
+  }
+
+  function onTabAuxclick(e: MouseEvent, id: number): void {
+    if (e.button === 1) {
+      e.preventDefault();
+      void closeTab(id);
+    }
+  }
+
+  function onTabsDblclick(e: MouseEvent): void {
+    if (e.target instanceof Element && e.target.closest(".tab, .tab-new")) return;
+    e.preventDefault();
+    newTab();
+  }
+
+  function onTabContext(e: MouseEvent, id: number): void {
+    e.preventDefault();
+    ctx = {
+      x: Math.min(e.clientX, window.innerWidth - 190),
+      y: Math.min(e.clientY, window.innerHeight - 180),
+      tabId: id,
+    };
+  }
+
+  function onCtxAction(action: "close" | "closeOthers" | "reveal" | "copy"): void {
+    const c = ctx;
+    ctx = null;
+    if (!c) return;
+    const t = app.tabs.find((x) => x.id === c.tabId);
+    if (!t) return;
+    if (action === "close") void closeTab(t.id);
+    else if (action === "closeOthers") void closeOtherTabs(t.id);
+    else if (action === "reveal" && t.path) void revealInFinder(t.path).catch(() => {});
+    else if (action === "copy" && t.path) void navigator.clipboard?.writeText(t.path).catch(() => {});
+  }
+
+  // 阅读滚动实时记回当前标签（切标签可恢复；编辑滚动由 EditorView 自记）
+  function onReaderScroll(): void {
+    const t = activeTab();
+    if (t && readerEl) t.scrollTop = readerEl.scrollTop;
+  }
+
+  // —— 侧栏拖宽（与编辑分栏同款 pointer capture；夹取与持久化在 settings） ——
+
+  let sideResize: "tree" | "toc" | null = null;
+
+  function onSideResizeDown(e: PointerEvent, which: "tree" | "toc"): void {
+    sideResize = which;
+    const el = e.currentTarget as HTMLElement;
+    el.classList.add("drag");
+    el.setPointerCapture(e.pointerId);
+  }
+
+  function onSideResizeMove(e: PointerEvent): void {
+    if (!sideResize) return;
+    const r = (e.currentTarget as HTMLElement).parentElement?.getBoundingClientRect();
+    if (!r) return;
+    // 树宽 = 指针到主区左缘；目录宽 = 指针到主区右缘
+    if (sideResize === "tree") setTreeWidth(e.clientX - r.left);
+    else setTocWidth(r.right - e.clientX);
+  }
+
+  function onSideResizeUp(e: PointerEvent): void {
+    (e.currentTarget as HTMLElement).classList.remove("drag");
+    sideResize = null;
   }
 
   function onKeydown(e: KeyboardEvent): void {
-    if (e.key === "Escape" && settingsOpen) {
-      settingsOpen = false;
-      return;
+    if (e.key === "Escape") {
+      if (settingsOpen) {
+        settingsOpen = false;
+        return;
+      }
+      if (ctx) {
+        ctx = null;
+        return;
+      }
     }
     if (!(e.metaKey || e.ctrlKey)) return;
     const k = e.key.toLowerCase();
     if (k === "t") {
       e.preventDefault();
-      toggleTheme();
+      // ⌘T 让位给新建标签（macOS 惯例），主题切换移至 ⇧⌘T
+      if (e.shiftKey) toggleTheme();
+      else newTab();
+    } else if (k === "w") {
+      e.preventDefault();
+      // 关到零标签后 ⌘W 关窗（此时不可能还有未保存修改）
+      if (app.tabs.length > 0 && app.activeId !== null) void closeTab(app.activeId);
+      else void win?.destroy();
     } else if (k === "o") {
       e.preventDefault();
       if (e.shiftKey) void onOpenFolder();
       else void onOpenFile();
-    } else if (k === "e" && app.doc) {
+    } else if (k === "e" && tab) {
       e.preventDefault();
       switchMode();
-    } else if (k === "s" && app.mode === "edit") {
+    } else if (k === "s" && tab?.mode === "edit") {
       e.preventDefault();
       void saveCurrent();
     } else if (k === "n") {
       e.preventDefault();
       onNewFile();
+    } else if (e.key === "[" || e.key === "]") {
+      e.preventDefault();
+      const id = cycleTabId(app.tabs, app.activeId, e.key === "]" ? 1 : -1);
+      if (id !== null) activateTab(id);
+    } else if (/^[1-9]$/.test(e.key)) {
+      e.preventDefault();
+      const id = nthTabId(app.tabs, Number(e.key));
+      if (id !== null) activateTab(id);
     }
   }
 
@@ -81,23 +209,24 @@
       await wireFsChange();
       await restoreSession();
       const { getCurrentWindow } = await import("@tauri-apps/api/window");
-      const win = getCurrentWindow();
+      win = getCurrentWindow();
       // Tauri v2 注册 onCloseRequested 即拦截原生关闭：统一显式决定后 destroy
       await win.onCloseRequested(async (e) => {
         e.preventDefault();
-        if (app.dirty) {
+        if (anyTabDirty()) {
           const ok = await confirmDiscard(S.dirtyClose);
           if (!ok) return;
         }
-        await win.destroy();
+        await win!.destroy();
       });
     })();
   });
 
-  // 点击弹层与齿轮之外的任意处关闭设置（齿轮自身 onclick 会切换开合，跳过）
+  // 点击弹层与齿轮之外的任意处关闭设置/右键菜单（齿轮自身 onclick 会切换开合，跳过）
   function onWindowMousedown(e: MouseEvent): void {
-    if (!settingsOpen) return;
     const t = e.target as HTMLElement;
+    if (ctx && !t.closest(".ctx-pop")) ctx = null;
+    if (!settingsOpen) return;
     if (t.closest(".settings-pop, .tb-actions .gear")) return;
     settingsOpen = false;
   }
@@ -116,13 +245,32 @@
       </svg>
       <span>{S.appName}</span>
     </div>
-    <div class="tb-title" data-tauri-drag-region>
-      <button
-        type="button"
-        class="tb-file"
-        title={S.revealInFinder}
-        onclick={() => app.currentPath && void revealInFinder(app.currentPath).catch(() => {})}
-      >{basename(app.currentPath)}</button>
+    <!-- svelte-ignore a11y_interactive_supports_focus -->
+    <div class="tb-tabs" role="tablist" aria-label={S.tabsLabel} data-tauri-drag-region ondblclick={onTabsDblclick}>
+      {#each app.tabs as t (t.id)}
+        <button
+          type="button"
+          role="tab"
+          class="tab"
+          class:active={t.id === app.activeId}
+          class:empty={!t.path}
+          aria-selected={t.id === app.activeId}
+          onclick={(e) => onTabClick(e, t.id)}
+          onauxclick={(e) => onTabAuxclick(e, t.id)}
+          oncontextmenu={(e) => onTabContext(e, t.id)}
+        >
+          <span class="tab-name">{tabTitle(t, S.newTabTitle)}</span>
+          {#if t.conflict}
+            <span class="tab-dot warn" title={S.conflictTitle}></span>
+          {:else if t.dirty}
+            <span class="tab-dot" title={S.dirtySwitch}></span>
+          {/if}
+          <span class="tab-x" aria-hidden="true"><Icon name="x" size={12} strokeWidth={2} /></span>
+        </button>
+      {/each}
+      <button type="button" class="tab-new" aria-label={S.newTab} data-tip={S.newTabHint} onclick={newTab}>
+        <Icon name="plus" raw strokeWidth={2} size={13} />
+      </button>
     </div>
     <div class="tb-actions">
       <button
@@ -148,19 +296,19 @@
         disabled={!newFileTargetDir()}
         onclick={onNewFile}
       ><Icon name="filePlus" raw strokeWidth={2} /></button>
-      <button type="button" aria-label={S.themeHint} data-tip={S.themeHint} onclick={toggleTheme}>
+      <button type="button" aria-label={S.toggleTheme} data-tip={S.themeHint} onclick={toggleTheme}>
         <Icon name={resolvedTheme() === "dark" ? "sun" : "moon"} raw strokeWidth={2} />
       </button>
       <button
         type="button"
         class="mode"
-        aria-label={app.mode === "edit" ? S.toRead : S.toEdit}
-        data-tip={app.mode === "edit" ? S.toRead : S.toEdit}
+        aria-label={tab?.mode === "edit" ? S.toRead : S.toEdit}
+        data-tip={tab?.mode === "edit" ? S.toRead : S.toEdit}
         onclick={switchMode}
       >
         <Icon name="pencilLine" raw strokeWidth={2} />
-        <span>{app.mode === "edit" ? S.readMode : S.editMode}</span>
-        {#if app.dirty}<span class="dirty-dot" aria-label="未保存"></span>{/if}
+        <span>{tab?.mode === "edit" ? S.readMode : S.editMode}</span>
+        {#if tab?.dirty}<span class="dirty-dot" aria-label="未保存"></span>{/if}
       </button>
       <button
         type="button"
@@ -176,50 +324,83 @@
       <SettingsPanel />
     {/if}
   </header>
-  {#if app.error && app.mode === "edit"}
-    <div class="save-banner" role="alert">{S.saveFailedBanner}：{app.error}</div>
+  {#if tab?.error && tab.mode === "edit"}
+    <div class="save-banner" role="alert">{S.saveFailedBanner}：{tab.error}</div>
   {/if}
   <div class="main">
     {#if !settings.treeCollapsed}
-      <aside class="side tree" aria-label="文件树">
+      <aside class="side tree" style="width: {settings.treeWidth}px" aria-label="文件树">
         <FileTree />
       </aside>
+      <div
+        class="side-resizer res-tree"
+        role="separator"
+        aria-label="拖动调整文件树宽度，双击复位"
+        onpointerdown={(e) => onSideResizeDown(e, "tree")}
+        onpointermove={onSideResizeMove}
+        onpointerup={onSideResizeUp}
+        onpointercancel={onSideResizeUp}
+        ondblclick={() => setTreeWidth(TREE_WIDTH_DEFAULT)}
+      ></div>
     {/if}
-    <section class="reader" use:overlayScrollbar>
-      {#if app.currentPath === null && app.error === null}
+    <section class="reader" bind:this={readerEl} use:overlayScrollbar onscroll={onReaderScroll}>
+      {#if !tab || (tab.path === null && !tab.error)}
         <Welcome />
-      {:else if app.mode === "edit"}
+      {:else if tab.mode === "edit"}
         <EditorView />
       {:else}
         <ReaderView />
       {/if}
     </section>
-    {#if !settings.tocCollapsed && app.mode === "read"}
-      <aside class="side toc" aria-label="文档目录">
+    {#if !settings.tocCollapsed && tab && tab.mode === "read" && tab.path !== null}
+      <div
+        class="side-resizer res-toc"
+        role="separator"
+        aria-label="拖动调整目录宽度，双击复位"
+        onpointerdown={(e) => onSideResizeDown(e, "toc")}
+        onpointermove={onSideResizeMove}
+        onpointerup={onSideResizeUp}
+        onpointercancel={onSideResizeUp}
+        ondblclick={() => setTocWidth(TOC_WIDTH_DEFAULT)}
+      ></div>
+      <aside class="side toc" style="width: {settings.tocWidth}px" aria-label="文档目录">
         <TocPanel />
       </aside>
     {/if}
   </div>
 </div>
 
-{#if app.conflictPath}
+{#if tab?.conflict}
   <div class="conflict-overlay" role="alertdialog" aria-label={S.conflictTitle}>
     <div class="conflict-box">
       <div class="c-title">{S.conflictTitle}</div>
-      <div class="c-path">{app.conflictPath}</div>
+      <div class="c-path">{tab.conflict}</div>
       <div class="c-actions">
         <button
           type="button"
           class="pri"
           onclick={() => {
-            const p = app.conflictPath;
-            app.conflictPath = null;
+            const p = tab.conflict;
+            tab.conflict = null;
             if (p) void openFile(p, { force: true });
           }}>{S.conflictReload}</button
         >
-        <button type="button" onclick={() => (app.conflictPath = null)}>{S.conflictKeep}</button>
+        <button type="button" onclick={() => (tab.conflict = null)}>{S.conflictKeep}</button>
       </div>
     </div>
+  </div>
+{/if}
+
+{#if ctx && ctxTab}
+  <div class="ctx-pop" role="menu" style="left:{ctx.x}px; top:{ctx.y}px">
+    <button type="button" role="menuitem" onclick={() => onCtxAction("close")}>{S.closeTab}</button>
+    {#if app.tabs.length > 1}
+      <button type="button" role="menuitem" onclick={() => onCtxAction("closeOthers")}>{S.closeOtherTabs}</button>
+    {/if}
+    {#if ctxTab.path}
+      <button type="button" role="menuitem" onclick={() => onCtxAction("reveal")}>{S.revealInFinder}</button>
+      <button type="button" role="menuitem" onclick={() => onCtxAction("copy")}>{S.copyPath}</button>
+    {/if}
   </div>
 {/if}
 
