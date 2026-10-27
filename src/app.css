@@ -789,7 +789,9 @@ button {
 
 /* —— 编辑视图（决策 7.1/8.1） —— */
 .edit-split {
-  flex: 1;
+  /* 占满 .reader 视口高：编辑/预览两栏各自内滚，.reader 只在阅读模式滚。
+     不能依赖内容撑高——短文档（如新建的一行标题）会塌成一截、下方露白 */
+  height: 100%;
   display: flex;
   min-height: 0;
 }
