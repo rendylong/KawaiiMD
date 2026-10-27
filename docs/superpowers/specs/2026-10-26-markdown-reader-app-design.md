@@ -50,7 +50,7 @@ rendy 在 macOS 上有大量本地 markdown 文档（含 mermaid 架构图）需
 
 ## 3. 约束
 
-- **应用标识**：名称「墨阅」，bundle id `com.rendy.moyue`（ZCode 默认提案，rendy 未否决；改名成本在文件关联注册后变高，落地前可换）
+- **应用标识**：名称「KawaiiMD」，bundle id `com.rendy.kawaimd`（ZCode 默认提案，rendy 未否决；改名成本在文件关联注册后变高，落地前可换）
 - **平台**：macOS（darwin arm64）优先；Tauri 保持跨平台可能性
 - **文件编码**：rendy 确认全部 UTF-8；读取遇非法 UTF-8 时优雅报错（明确提示哪个文件），不做 GBK 等多编码检测
 - **分发**：仅自用——ad-hoc 签名 + 本地打包 dmg，不做 Developer ID 公证；将来要分发再补

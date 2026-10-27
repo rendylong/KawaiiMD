@@ -1,8 +1,10 @@
-# 墨阅（MoYue）Markdown 阅读器 App 实施计划
+# KawaiiMD Markdown 阅读器 App 实施计划
+
+> 2026-10-27 应用更名 KawaiiMD（原 墨阅/MoYue），全文旧名已批量替换；localStorage 键现为 kawaimd.*、identifier 为 com.rendy.kawaimd。
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 构建仅 macOS 的本地 markdown 阅读器/编辑器桌面应用「墨阅」：渲染 GFM + mermaid、文件夹树、编辑写回、自动刷新。
+**Goal:** 构建仅 macOS 的本地 markdown 阅读器/编辑器桌面应用「KawaiiMD」：渲染 GFM + mermaid、文件夹树、编辑写回、自动刷新。
 
 **Architecture:** Tauri v2（Rust 提供 fs 命令/文件监听/系统集成）+ Svelte 5 前端。渲染核心（markdown-it → HTML → 图片重写 → mermaid/高亮后处理）为纯 TS 模块，阅读视图与编辑预览共用一条管线。
 
@@ -13,7 +15,7 @@
 ## Global Constraints
 
 - 平台 macOS arm64；Node ≥ 20；pnpm；Rust stable + Xcode CLT
-- 应用标识全配置统一：productName `墨阅`，identifier `com.rendy.moyue`（若脚手架工具拒绝 unicode，则 productName 用 `MoYue`、窗口标题用「墨阅」，并在提交信息注明）
+- 应用标识全配置统一：productName `KawaiiMD`，identifier `com.rendy.kawaimd`（若脚手架工具拒绝 unicode，则 productName 用 `KawaiiMD`、窗口标题用「KawaiiMD」，并在提交信息注明）
 - 界面文案一律 zh-CN 且集中在 `src/lib/ui-strings.ts`，组件内禁止散落硬编码文案
 - **设计已锁定**（2026-10-26 设计评审 + 用户可视化确认）：配色 **B 墨青**；正文**宋体衬线栈** 17px / 行高 1.8 / 栏宽 42em；编辑分栏默认 50%（可拖 25–75%，持久化，**不做折叠**）；**文件树侧栏与目录（TOC）面板支持折叠/展开**（工具栏按钮 + 持久化 + 窄窗自动隐藏）；快捷键 ⌘O / ⇧⌘O / ⌘E / ⌘T / ⌘S / Esc / 树方向键；最小窗口 720×480；focus 环 accent 2px；图标按钮 aria-label 中文
 - UTF-8 only：任何读取失败（非 UTF-8/无权限/不存在）的错误信息必须包含文件绝对路径
@@ -51,13 +53,13 @@
 
 ```bash
 cd /Users/rendy/markdownreader
-pnpm create tauri-app@latest scaffold --template svelte-ts --manager pnpm --identifier com.rendy.moyue --yes
+pnpm create tauri-app@latest scaffold --template svelte-ts --manager pnpm --identifier com.rendy.kawaimd --yes
 # 将 scaffold/ 下全部内容（含点文件）移动到仓库根，删除 scaffold/，保留 docs/
 ```
 
 - [ ] **Step 2: 统一应用标识与安全基线**
 
-修改 `src-tauri/tauri.conf.json`：`productName: "墨阅"`（被工具拒绝则 `MoYue`，见 Global Constraints）、`identifier: "com.rendy.moyue"`、默认窗口 1100×750、title `墨阅`；`app.security.csp` 设为 `default-src 'self'; img-src 'self' asset: http://asset.localhost; style-src 'self' 'unsafe-inline'`（R4/D7）。
+修改 `src-tauri/tauri.conf.json`：`productName: "KawaiiMD"`（被工具拒绝则 `KawaiiMD`，见 Global Constraints）、`identifier: "com.rendy.kawaimd"`、默认窗口 1100×750、title `KawaiiMD`；`app.security.csp` 设为 `default-src 'self'; img-src 'self' asset: http://asset.localhost; style-src 'self' 'unsafe-inline'`（R4/D7）。
 
 - [ ] **Step 3: 验证构建链**
 
@@ -80,9 +82,9 @@ git init && git add -A && git commit -m "chore: scaffold tauri2 + svelte5 app"
 
 **Interfaces:**
 - Produces:
-  - `settings.svelte.ts`：`settings: { themeMode: 'system'|'light'|'dark' }`（持久化 key `moyue.theme`）；`setThemeMode(m)`；`resolvedTheme(): 'light'|'dark'`（system 时读 matchMedia，含变更监听）；`recents: string[]`（key `moyue.recent`，最多 10 条）；`pushRecent(path)`（去重置顶并持久化）
-  - `ui-strings.ts`：`export const S = { appName: '墨阅', openFile: '打开文件', openFolder: '打开文件夹', theme: '主题', … }`，后续任务只增不改
-  - 布局骨架：工具栏（左：墨滴 logo +「墨阅」；**中央：当前文件名**（次级文本，点击 reveal in Finder，决策 1.1/1A）；右：文件树折叠、TOC 折叠、打开文件、打开文件夹、主题切换、阅读/编辑切换，图标按钮均带中文 aria-label）+ 三栏 grid（侧栏 240px / 主区 1fr / TOC 220px）；快捷键 ⌘O/⇧⌘O/⌘E/⌘T 挂载（决策 6.2）
+  - `settings.svelte.ts`：`settings: { themeMode: 'system'|'light'|'dark' }`（持久化 key `kawaimd.theme`）；`setThemeMode(m)`；`resolvedTheme(): 'light'|'dark'`（system 时读 matchMedia，含变更监听）；`recents: string[]`（key `kawaimd.recent`，最多 10 条）；`pushRecent(path)`（去重置顶并持久化）
+  - `ui-strings.ts`：`export const S = { appName: 'KawaiiMD', openFile: '打开文件', openFolder: '打开文件夹', theme: '主题', … }`，后续任务只增不改
+  - 布局骨架：工具栏（左：墨滴 logo +「KawaiiMD」；**中央：当前文件名**（次级文本，点击 reveal in Finder，决策 1.1/1A）；右：文件树折叠、TOC 折叠、打开文件、打开文件夹、主题切换、阅读/编辑切换，图标按钮均带中文 aria-label）+ 三栏 grid（侧栏 240px / 主区 1fr / TOC 220px）；快捷键 ⌘O/⇧⌘O/⌘E/⌘T 挂载（决策 6.2）
   - theme.css 按锁定值实现（决策 5.1=B 墨青、4.1、4.2）：
     - 亮：`--bg #FAFAF7→墨青版 #FAFAF9 / --bg-side #F1F3F2 / --fg #191D1C / --fg-2 #56605D / --fg-3 #828C89 / --line #E2E7E5 / --accent #237A6F / --accent-weak #E4F0EE / --code-bg #F1F4F3 / --sel rgba(35,122,111,.20)`
     - 暗：`--bg #151817 / --bg-side #1B1F1E / --fg #E3E8E6 / --fg-2 #A0A9A6 / --fg-3 #6A7371 / --line #2C3331 / --accent #56B3A4 / --accent-weak #1F312D / --code-bg #202523 / --sel rgba(86,179,164,.28)`
@@ -94,7 +96,7 @@ git init && git add -A && git commit -m "chore: scaffold tauri2 + svelte5 app"
 ```bash
 pnpm add -D vitest jsdom
 ```
-`vitest.config.ts`：environment `jsdom`。测试 `src/lib/settings.test.ts`：mock `localStorage` 与 `matchMedia`——`setThemeMode('dark')` 后读取 `moyue.theme === 'dark'` 且 `resolvedTheme() === 'dark'`；`pushRecent` 去重置顶、超过 10 条截断。
+`vitest.config.ts`：environment `jsdom`。测试 `src/lib/settings.test.ts`：mock `localStorage` 与 `matchMedia`——`setThemeMode('dark')` 后读取 `kawaimd.theme === 'dark'` 且 `resolvedTheme() === 'dark'`；`pushRecent` 去重置顶、超过 10 条截断。
 
 - [ ] **Step 2: 运行测试确认失败**
 
@@ -227,7 +229,7 @@ mock `fs/tauri.ts` 全部函数（vi.mock）：`openFile('/d/a.md')` 成功路�
 - Consumes: `listDir`、`openFile`、`app`
 - Produces:
   - `entries.ts`：`classifyEntry(name: string, isDir: boolean): 'dir'|'markdown'|'image'|'other'`（markdown 扩展名集 `.md/.markdown/.mkd/.mdx` 大小写不敏感；image = png/jpg/jpeg/gif/webp/svg/avif）；`sortEntries(entries: DirEntry[]): DirEntry[]`（dir → markdown → image → other，组内 `localeCompare('zh')`）
-  - `FileTree.svelte`：props `{root: string, activePath: string|null}`；根 = `app.workspaceRoot ?? dirname(app.currentPath)`；展开节点时懒加载 `listDir`，**加载行内 spinner 延迟 200ms 显示**（决策 2.1）；文件夹/文件类型图标（内联 SVG 三套）；点击 md → `openFile`；当前文件高亮 class；**侧栏可折叠**：工具栏按钮切换 + 持久化 `moyue.tree-collapsed`，窄窗 ≤640px 自动隐藏（决策 6.1/8.1）；树节点 ↑↓↔↵ 键盘导航（决策 6.2）
+  - `FileTree.svelte`：props `{root: string, activePath: string|null}`；根 = `app.workspaceRoot ?? dirname(app.currentPath)`；展开节点时懒加载 `listDir`，**加载行内 spinner 延迟 200ms 显示**（决策 2.1）；文件夹/文件类型图标（内联 SVG 三套）；点击 md → `openFile`；当前文件高亮 class；**侧栏可折叠**：工具栏按钮切换 + 持久化 `kawaimd.tree-collapsed`，窄窗 ≤640px 自动隐藏（决策 6.1/8.1）；树节点 ↑↓↔↵ 键盘导航（决策 6.2）
 
 - [ ] **Step 1: 写失败测试**（entries 纯函数：分类大小写、排序分组与中文排序）
 
@@ -288,7 +290,7 @@ mock `fs/tauri.ts` 全部函数（vi.mock）：`openFile('/d/a.md')` 成功路�
 - Consumes: `app.doc.toc`、heading id
 - Produces:
   - `scroll.ts`：`activeFromOffsets(offsets: number[], scrollTop: number): number`（返回最后一个 ≤ scrollTop 的索引，-1 起步）；`restoreScroll(container: HTMLElement, headingId: string|null): void`（Task 12 复用）
-  - `TocPanel.svelte`：渲染 `toc`（按 level 缩进），点击项 `scrollIntoView({behavior:'smooth'})`；容器滚动时经 `activeFromOffsets` 高亮当前项（rAF 节流）；**面板可由工具栏按钮折叠 + 持久化 `moyue.toc-collapsed`，≤820px 自动隐藏**（决策 6.1/8.1）
+  - `TocPanel.svelte`：渲染 `toc`（按 level 缩进），点击项 `scrollIntoView({behavior:'smooth'})`；容器滚动时经 `activeFromOffsets` 高亮当前项（rAF 节流）；**面板可由工具栏按钮折叠 + 持久化 `kawaimd.toc-collapsed`，≤820px 自动隐藏**（决策 6.1/8.1）
 
 - [ ] **Step 1: 写失败测试**（activeFromOffsets 边界：空数组、scrollTop 在两标题间、超过最后标题）
 
@@ -330,7 +332,7 @@ Rust：tempdir + `start_watcher` + channel，写入/删除文件 2s 内收到对
 - Consumes: Task 11 `conflictPath`/`decideReload`、Task 6 pipeline、Task 10 `restoreScroll`
 - Produces:
   - `sync.ts`：`headingAtLine(headingLines: HeadingLine[], line: number): TocItem|null`（最大 `line ≤` 输入行的标题；空数组→null）
-  - `EditorView.svelte`：左右分栏（CM6 | 预览复用 `mountDoc`，500ms 防抖在 EditorView 控制）；**分栏默认 50%，分隔条可拖 25–75%（宽度持久化 `moyue.split`，双击复位 50%）**（决策 7.1；用户更正：编辑分栏不做折叠/布局三态）；CM6 扩展含 `Mod-s` keymap → 保存；`dirty = doc ≠ 保存快照`；保存 = `writeTextFile` + 快照更新 + mtime 基线更新（写盘失败走 T6 的 `setError` 模式，错误含路径）；滚动同步：CM onScroll → 首可见行 → `headingAtLine` → 预览滚到该 id（程序滚动 100ms 内忽略反向事件）；冲突对话框（重载外部版 = openFile 重入；保留我的 = 清 conflictPath，保持编辑内容）；窗口 `onCloseRequested` dirty 时经 dialog 确认
+  - `EditorView.svelte`：左右分栏（CM6 | 预览复用 `mountDoc`，500ms 防抖在 EditorView 控制）；**分栏默认 50%，分隔条可拖 25–75%（宽度持久化 `kawaimd.split`，双击复位 50%）**（决策 7.1；用户更正：编辑分栏不做折叠/布局三态）；CM6 扩展含 `Mod-s` keymap → 保存；`dirty = doc ≠ 保存快照`；保存 = `writeTextFile` + 快照更新 + mtime 基线更新（写盘失败走 T6 的 `setError` 模式，错误含路径）；滚动同步：CM onScroll → 首可见行 → `headingAtLine` → 预览滚到该 id（程序滚动 100ms 内忽略反向事件）；冲突对话框（重载外部版 = openFile 重入；保留我的 = 清 conflictPath，保持编辑内容）；窗口 `onCloseRequested` dirty 时经 dialog 确认
 
 - [ ] **Step 1: 写失败测试**（headingAtLine：命中/低于首标题/超出末标题/空数组；dirty 判定纯函数 `isDirty(snapshot, current)` 若抽出则一并测）
 
@@ -347,7 +349,7 @@ Rust：tempdir + `start_watcher` + channel，写入/删除文件 2s 内收到对
 - Test: 手动验证（无自动化），但 `cargo check`/`pnpm build` 须过
 
 **Interfaces:**
-- Produces: 单实例二次打开文件 → `app.emit("open-file", {path})` → 前端 `openFile`；窗口拖放（`onDragDropEvent` drop 单文件→openFile、目录→openFolder）；Welcome 最近文件列表渲染 `settings.recents` 可点击；**启动恢复上次会话**——`settings.svelte.ts` 增加 `session: {file: string|null, folder: string|null}`（key `moyue.session`，`persistSession()` 在 openFile/openFolder 时更新），`App.svelte` 挂载时若 `session.file` 存在且可读则 `openFile`，同时恢复 `workspaceRoot`，失败（文件已移动/删除）则落到 Welcome 空态
+- Produces: 单实例二次打开文件 → `app.emit("open-file", {path})` → 前端 `openFile`；窗口拖放（`onDragDropEvent` drop 单文件→openFile、目录→openFolder）；Welcome 最近文件列表渲染 `settings.recents` 可点击；**启动恢复上次会话**——`settings.svelte.ts` 增加 `session: {file: string|null, folder: string|null}`（key `kawaimd.session`，`persistSession()` 在 openFile/openFolder 时更新），`App.svelte` 挂载时若 `session.file` 存在且可读则 `openFile`，同时恢复 `workspaceRoot`，失败（文件已移动/删除）则落到 Welcome 空态
 
 - [ ] **Step 1: 配置与实现**（single-instance 回调解析 `std::env::args` 尾部路径；启动恢复逻辑在 `settings.test.ts` 补 session 持久化两条断言）
 - [ ] **Step 2: `cargo check && pnpm check && pnpm build` PASS**
@@ -400,7 +402,7 @@ T1→M1；T2+T6→M2；T3+T7→M3；T8+T9+T10→M4；T11→M5；T12→M6；T13+T
 
 # Eng Review 记录（plan-eng-review · 2026-10-26）
 
-Target（固定）：`docs/superpowers/plans/2026-10-26-moyue-markdown-reader.md`（本文件）；Spec：`docs/superpowers/specs/2026-10-26-markdown-reader-app-design.md`。
+Target（固定）：`docs/superpowers/plans/2026-10-26-kawaimd-markdown-reader.md`（本文件）；Spec：`docs/superpowers/specs/2026-10-26-markdown-reader-app-design.md`。
 
 ## Scope Challenge
 
@@ -409,7 +411,7 @@ Target（固定）：`docs/superpowers/plans/2026-10-26-moyue-markdown-reader.md
 - REALITY: premise-table pass — create-tauri-app 非交互 flags（v2.tauri.app/start/create-project、github.com/tauri-apps/create-tauri-app）；模板已升 Svelte 5（release notes）；Svelte 5 允许 `export const obj = $state({...})` 导出、禁止可重赋值导出（svelte.dev/docs/svelte/$state）；`Manager::asset_protocol_scope() → fs::Scope::allow_directory(path, recursive)`（docs.rs tauri 2.12.5，需默认 feature `protocol-asset`）；`bundle.fileAssociations`（v2.tauri.app/reference/config）。markdown-it 插件族与 md-reader 生产依赖一致（仓库 package.json 实抓）。CM6/mermaid 为 Layer 1 既有物。unverified=0。
 - REALITY: already-done n/a — greenfield（尚无 git 仓库与代码，T1 才 init）。
 - REALITY: surface-check pass — 计划点名的命令/API 逐一验证如上；无 miss。
-- REALITY: binding-decisions pass — 设计文档全部约束决策（UTF-8 only、ad-hoc 签名、墨阅/com.rendy.moyue、v1 无 tabs、会话恢复）均在计划 Global Constraints/任务中承载，无被覆盖或冲突。
+- REALITY: binding-decisions pass — 设计文档全部约束决策（UTF-8 only、ad-hoc 签名、KawaiiMD/com.rendy.kawaimd、v1 无 tabs、会话恢复）均在计划 Global Constraints/任务中承载，无被覆盖或冲突。
 - REALITY: numbers pass — 验收数值（≤2s/≤1s/≤0.5s/<15MB）均 [estimated]（来自 spec §7，验收时实测）；无 [measured] 假冒。
 - REALITY: deferred-asks pass — 本计划无关联 issue；P2 清单即显式延期项，已在 spec §2。
 - REALITY: pr-count n/a — 单分支顺序实施（Native 执行建议单 wave），无拆 PR 计划。
@@ -652,7 +654,7 @@ _No new tasks from Architecture._ _No new tasks from Code Quality._ _No new task
 
 分类 **HYBRID**：外壳 OPERATE（App UI 规则），阅读面 READ（度量/wayfinding）。硬拒绝命中：**0**（无卡片栅格/hero/轮播/渐变）。
 
-Litmus：1 品牌可辨 YES（墨阅+墨滴标识 spec）；2 视觉锚点 YES（文档本身）；3 仅标题可扫 YES（TOC）；4 一区一职 YES；5 卡片必要性 N/A（零卡片路线）；6 动效 NOT SPEC'D；7 去阴影仍高级 YES。
+Litmus：1 品牌可辨 YES（KawaiiMD+墨滴标识 spec）；2 视觉锚点 YES（文档本身）；3 仅标题可扫 YES（TOC）；4 一区一职 YES；5 卡片必要性 N/A（零卡片路线）；6 动效 NOT SPEC'D；7 去阴影仍高级 YES。
 
 - 发现 4.1 [P1]（confidence 9，Universal 规则禁默认字体栈作正文）——中文阅读器正文字体未决策，这是产品灵魂。
   - 4A（推荐）正文衬线栈 `"Songti SC", "Noto Serif CJK SC", serif`（macOS 自带宋体，书页感，零包体）；UI/侧栏/工具栏 `"PingFang SC", system-ui`；代码 `ui-monospace`。P2 可再议打包子集化霞鹜文楷
@@ -695,7 +697,7 @@ Litmus：1 品牌可辨 YES（墨阅+墨滴标识 spec）；2 视觉锚点 YES�
 
 ## Pass 7 遗留决策
 
-- 7.1 [P3] 编辑分栏：固定 50/50 vs 可拖。7A（推荐）可拖分隔条（5px 命中区），宽度持久化 `moyue.split`；7B 固定 50/50。**State: 已批准（见下方批答记录）**
+- 7.1 [P3] 编辑分栏：固定 50/50 vs 可拖。7A（推荐）可拖分隔条（5px 命中区），宽度持久化 `kawaimd.split`；7B 固定 50/50。**State: 已批准（见下方批答记录）**
 - 7.2 Outside design voices：skipped（未获 opt-in；不阻塞）。
 
 ## 批答记录（2026-10-26 用户经可视化确认页 + 文字确认）
@@ -708,7 +710,7 @@ Litmus：1 品牌可辨 YES（墨阅+墨滴标识 spec）；2 视觉锚点 YES�
 - 5.1 → **B 墨青**（用户选择，非推荐的 5A 朱砂）：accent #237A6F/#56B3A4，全套变量见 T2
 - 6.1 → **6A** 最小 720×480；TOC ≤820px、文件树 ≤640px 自动隐藏
 - 6.2 → **6A** 快捷键全集 + 树方向键 + aria-label + focus 环
-- 7.1 → 默认 **50%**，可拖 **25–75%**，持久化 `moyue.split`（确认页拖动验证）
+- 7.1 → 默认 **50%**，可拖 **25–75%**，持久化 `kawaimd.split`（确认页拖动验证）
 - 8.1（用户追加并更正）→ **目录（TOC）面板与文件树侧栏支持折叠/展开**（工具栏按钮 + 持久化 + 窄窗自动隐藏）；**编辑分栏不折叠**（用户更正原文「编辑分栏」为「目录栏」）
 
 全部修订已应用至 T2/T6/T7/T8/T10/T12 与 Global Constraints；决策共 10 项（含 1 项用户更正）。

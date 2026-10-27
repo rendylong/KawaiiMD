@@ -62,5 +62,5 @@ IPC 事件：Rust → 前端 `open-file`（单实例二次启动与 Finder 双�
 ## 文档
 
 - 设计 spec：`docs/superpowers/specs/2026-10-26-markdown-reader-app-design.md`
-- 实施计划与评审记录：`docs/superpowers/plans/2026-10-26-moyue-markdown-reader.md`
+- 实施计划与评审记录：`docs/superpowers/plans/2026-10-26-kawaimd-markdown-reader.md`
 - 手动验收清单：`MANUAL-QA.md`
